@@ -252,7 +252,7 @@ During = в момент обнаружения (SOTA). After = ретроспе
 | Черновик (private draft) | Заготовка (public draft) |
 |---|---|
 | Личный, никому не показывается | Опубликована, видна другим |
-| `DS-strategy/drafts/` | `DS-Knowledge-Index/docs/` (status: draft) |
+| `DS-my-strategy/drafts/` | `DS-Knowledge-Index-Tseren/docs/` (status: draft) |
 | Может быть сырым, незаконченным | Связный текст, понятный читателю |
 | Цель: кристаллизация мысли для себя | Цель: тестирование гипотез, обратная связь |
 
