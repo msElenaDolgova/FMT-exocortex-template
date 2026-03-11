@@ -1,6 +1,6 @@
 Выполни сценарий «Ежедневный разбор заметок» для роли Стратег (R1).
 
-> Source-of-truth: DP.ROLE.012-strategist (PACK-digital-platform). Алгоритм полностью описан ниже.
+Источник сценария: /Users/elenadolgova/IWE/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.AGENT.012-strategist/scenarios/scheduled/note-review.md
 
 ## Контекст
 
@@ -158,7 +158,7 @@
 - "краткий текст заметки" → рекомендую черновик: [предлагаемое название]. Концепты: [список]. Target: заготовка | pack | рп
 ```
 
-> **Черновик ≠ Заготовка.** Черновик — личный, в DS-strategy. Заготовка — публичная, в Индексе знаний (status: draft).
+> **Черновик ≠ Заготовка.** Черновик — личный, в DS-strategy. Заготовка — публичная, в DS-Knowledge-Index (status: draft).
 > **Guards:** ≤5 черновиков = норма. 6-10 = ⚠️ предупреждение в рекомендации. >10 = 🛑 не рекомендовать новые.
 
 #### 7. Записать личные данные в personal/

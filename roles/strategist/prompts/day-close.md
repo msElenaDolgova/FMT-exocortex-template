@@ -3,24 +3,24 @@
 > **Триггер:** Ручной — по запросу пользователя (`./scripts/strategist.sh day-close`).
 > Отдельный файл отчёта НЕ создаётся. Итоги дня войдут в DayPlan следующего утра.
 
-Источник сценария: {{WORKSPACE_DIR}}/CLAUDE.md → Протокол Day-Close
+Источник сценария: /Users/elenadolgova/IWE/CLAUDE.md → Протокол Day-Close
 
 ## Контекст
 
-- **WeekPlan:** {{WORKSPACE_DIR}}/DS-strategy/current/WeekPlan W*.md (последний по дате)
-- **MEMORY:** ~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/MEMORY.md
-- **Exocortex backup:** {{WORKSPACE_DIR}}/DS-strategy/exocortex/
+- **WeekPlan:** /Users/elenadolgova/IWE/DS-strategy/current/WeekPlan W*.md (последний по дате)
+- **MEMORY:** ~/.claude/projects/-Users-elenadolgova-IWE/memory/MEMORY.md
+- **Exocortex backup:** /Users/elenadolgova/IWE/DS-strategy/exocortex/
 
 ## Алгоритм
 
 ### 1. Сбор коммитов за сегодня
 
 ```bash
-# Для КАЖДОГО репо в {{WORKSPACE_DIR}}/:
-git -C {{WORKSPACE_DIR}}/<repo> log --since="today 00:00" --oneline --no-merges
+# Для КАЖДОГО репо в /Users/elenadolgova/IWE/:
+git -C /Users/elenadolgova/IWE/<repo> log --since="today 00:00" --oneline --no-merges
 ```
 
-- Пройди по ВСЕМ репозиториям в `{{WORKSPACE_DIR}}/`
+- Пройди по ВСЕМ репозиториям в `/Users/elenadolgova/IWE/`
 - Сгруппируй коммиты по репозиториям
 - Сопоставь с РП из недельного плана
 - Определи статус каждого затронутого РП: done / partial / not started
@@ -44,15 +44,15 @@ git -C {{WORKSPACE_DIR}}/<repo> log --since="today 00:00" --oneline --no-merges
 
 ### 4. Backup экзокортекса
 
-Скопируй актуальные файлы в `{{WORKSPACE_DIR}}/DS-strategy/exocortex/`:
+Скопируй актуальные файлы в `/Users/elenadolgova/IWE/DS-strategy/exocortex/`:
 
 ```bash
 # Корневой CLAUDE.md
-cp {{WORKSPACE_DIR}}/CLAUDE.md {{WORKSPACE_DIR}}/DS-strategy/exocortex/CLAUDE.md
+cp /Users/elenadolgova/IWE/CLAUDE.md /Users/elenadolgova/IWE/DS-strategy/exocortex/CLAUDE.md
 
 # Memory (Слой 3)
-cp ~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/MEMORY.md {{WORKSPACE_DIR}}/DS-strategy/exocortex/MEMORY.md
-cp ~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/*.md {{WORKSPACE_DIR}}/DS-strategy/exocortex/
+cp ~/.claude/projects/-Users-elenadolgova-IWE/memory/MEMORY.md /Users/elenadolgova/IWE/DS-strategy/exocortex/MEMORY.md
+cp ~/.claude/projects/-Users-elenadolgova-IWE/memory/*.md /Users/elenadolgova/IWE/DS-strategy/exocortex/
 ```
 
 ### 5. Закоммитить

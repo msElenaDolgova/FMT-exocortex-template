@@ -16,9 +16,23 @@
 
 ## При перемещении / переименовании репозитория
 
+<<<<<<< Updated upstream
 - [ ] `grep -r` по ВСЕМ репо — найти ВСЕ внутренние ссылки
 - [ ] Скрипты (.sh), промпты (.md), конфиги (.yaml), plist, GH Actions (.yml), README, CLAUDE.md
 - [ ] Загруженные plist в `~/Library/LaunchAgents/` (отдельно от шаблонов!)
+=======
+- [ ] `grep -r "<old-path>/"` по ВСЕМ репо — найти ВСЕ внутренние ссылки
+- [ ] Скрипты (.sh): hardcoded пути (должны быть `/Users/elenadolgova/IWE`)
+- [ ] Промпты (.md): `/Users/elenadolgova/IWE/...` пути к config/routing
+- [ ] Конфиги (config.yaml): `script:` поля
+- [ ] LaunchD templates (.plist): `<string>/Users/.../</string>`
+- [ ] Загруженные plist в `~/Library/LaunchAgents/` (отдельно от шаблонов в репо!)
+- [ ] GH Actions (.yml): symlink/path в workflow
+- [ ] README.md: примеры вызовов
+- [ ] CLAUDE.md (корневой + репо): навигация
+
+> **Урок:** При перемещении репо/системы — проверяй ВСЕ внутренние пути (скрипты, промпты, config, templates, GH Actions, plist). Если обновить только plist, но не внутренние файлы → scheduler будет ставить mark_done при падении → агенты не запустятся.
+>>>>>>> Stashed changes
 
 ## При ручной очистке fleeting-notes (🔄 заметки)
 
@@ -53,7 +67,28 @@
 
 ## При изменении файлов в memory/
 
+<<<<<<< Updated upstream
 - [ ] `template-sync.sh` — обновить список `mem_file`
 - [ ] `validate-template.sh` — обновить required files
 - [ ] `DS-strategy/exocortex/` — обновить backup
 - [ ] Запустить `template-sync.sh`
+=======
+- [ ] WP Context File создан/обновлён в `DS-strategy/inbox/WP-{N}-{slug}.md`
+  - Текущее состояние, решения, следующие шаги
+  - **Создавать при ПЕРВОМ Close**, не откладывать
+- [ ] Если создано новое репо → MAPSTRATEGIC.md (roadmap фаз)
+- [ ] Если создано новое репо → Strategy.md (в источники MAPSTRATEGIC)
+
+> **Урок (2026-02-11):** WP Context File не был создан вовремя, потому что не был в todo и не в Close-протоколе. Теперь обязателен.
+> **Урок (2026-02-12):** WP Context File и MAPSTRATEGIC пропущены при Close, потому что протокол выполнялся «по памяти» без перечитывания чеклиста. Правило: всегда перечитывай CLAUDE.md § 2 чеклист.
+
+## При добавлении/удалении/переименовании файлов в memory/
+
+- [ ] `template-sync.sh` — обновить список `mem_file` (passthrough или strip-author)
+- [ ] `validate-template.sh` — обновить список required files (если файл обязательный)
+- [ ] `DS-strategy/exocortex/` — удалить stale, добавить новые (backup)
+- [ ] `protocol-open.md` — обновить таблицу «Обслуживание экзокортекса» (если структура изменилась)
+- [ ] Запустить `template-sync.sh` и убедиться, что валидация проходит
+
+> **Урок (2026-02-22):** Рефакторинг memory/ (slim CLAUDE.md) сломал 3 места: template-sync ссылался на удалённые файлы, backup содержал stale копии, DS-exocortex не получил новые файлы. Причина: не было чеклиста для изменений структуры memory/.
+>>>>>>> Stashed changes

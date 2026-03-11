@@ -29,16 +29,18 @@
       "mcp__knowledge-mcp__list_sources",
       "mcp__ddt__describe_by_path",
       "mcp__ddt__read_digital_twin",
-      "mcp__ddt__write_digital_twin"
+      "mcp__ddt__write_digital_twin",
+      "Read(//Users/elenadolgova/.claude/**)",
+      "Read(//Users/elenadolgova/.config/claude/**)"
     ]
   },
   "mcpServers": {
     "knowledge-mcp": {
-      "type": "url",
+      "type": "http",
       "url": "https://knowledge-mcp.aisystant.workers.dev/mcp"
     },
     "ddt": {
-      "type": "url",
+      "type": "http",
       "url": "https://digital-twin-mcp.aisystant.workers.dev/mcp"
     }
   }

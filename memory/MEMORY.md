@@ -1,6 +1,6 @@
 # Оперативная память
 
-> **Инструкции:** `{{WORKSPACE_DIR}}/CLAUDE.md` | **Настройте под свою экосистему**
+> **Инструкции:** `/Users/elenadolgova/IWE/CLAUDE.md` | **Настройте под свою экосистему**
 
 ## БЛОКИРУЮЩИЕ (проверяй ВСЕГДА)
 
@@ -11,7 +11,7 @@
 ## ВАЖНЫЕ (проверяй на рубежах)
 
 3. **Capture:** На рубеже → «Capture: X → Y» (CLAUDE.md § 2)
-4. **Отчёты:** ВСЕ репо в {{WORKSPACE_DIR}}/
+4. **Отчёты:** ВСЕ репо в /Users/elenadolgova/IWE/
 5. **Процессы:** Нельзя реализовывать без PROCESSES.md (CLAUDE.md § 3)
 
 ---
@@ -23,6 +23,17 @@
 | # | РП | Бюджет | Статус | Дедлайн |
 |---|-----|--------|--------|---------|
 | 1 | Первая стратегическая сессия | 1h | pending | — |
+
+---
+
+## MCP-серверы
+
+**Claude Code 2.x:** `mcpServers` в `settings.local.json` игнорируется. Регистрировать через `claude mcp add`:
+```
+claude mcp add --transport http knowledge-mcp https://knowledge-mcp.aisystant.workers.dev/mcp
+claude mcp add --transport http ddt https://digital-twin-mcp.aisystant.workers.dev/mcp
+```
+Пишет в `.claude.json`. После добавления — перезапустить Claude Code.
 
 ---
 
