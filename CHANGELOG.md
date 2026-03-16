@@ -5,6 +5,13 @@ All notable changes to FMT-exocortex-template will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
 
+## [0.8.1] — 2026-03-16
+
+### Added
+- **CLAUDE.md** — различение «Скилл ≠ Роль ≠ Протокол» (WP-104)
+- **hard-distinctions.md HD #11** — переработка: обещание (SC) ≠ описание метода ≠ сервис (WP-101, DP.D.039)
+- **protocol-open.md** — режим `interactive: false` для Day Open (вывод одним блоком, «Требует внимания» в конце)
+
 ## [0.8.0] — 2026-03-16
 
 ### Added
