@@ -156,8 +156,8 @@ dispatch() {
         ran=1
     fi
 
-    # --- Стратег: note-review (22:00+) ---
-    if (( 10#$HOUR >= 22 )) && ! ran_today "strategist-note-review"; then
+    # --- Стратег: note-review (21:00+) ---
+    if (( 10#$HOUR >= 21 )) && ! ran_today "strategist-note-review"; then
         log "→ strategist note-review (catch-up: hour=$HOUR)"
         if "$STRATEGIST_SH" note-review >> "$LOG_FILE" 2>&1; then
             mark_done "strategist-note-review"
