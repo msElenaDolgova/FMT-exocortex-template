@@ -1,20 +1,20 @@
 # IWE: справочник для бота
 
-> Краткая справка по Intelligent Working Environment (IWE) для поиска и ответов бота.
+> Краткая справка по Intellectual Work Environment (IWE) для поиска и ответов бота.
 > Полная установка: [SETUP-GUIDE.md](SETUP-GUIDE.md)
 >
 > **Source-of-truth:** Pack-сущности платформы (доступны через MCP `knowledge-mcp`):
 > - `DP.IWE.001` — что такое IWE, зачем, архитектура
 > - `DP.IWE.002` — шаблон и установка, пререквизиты, FAQ, безопасность
 > - `DP.EXOCORTEX.001` — архитектура экзокортекса (3 слоя, модули)
-> - `DP.ARCH.002` — тиры T1-T5
+> - `DP.ARCH.002` — тиры T0-T4 + TM1-TM3 + TA1-TA4 + TD1
 > - `DP.ROLE.001` — реестр ИИ-ролей
 
 ---
 
 ## Что такое IWE
 
-IWE (Intelligent Working Environment) — интеллектуальная рабочая среда. Описывается через пять видов (FPF A.7: **Роль → Метод → Рабочий продукт**):
+IWE (Intellectual Work Environment) — интеллектуальная рабочая среда. Описывается через пять видов (FPF A.7: **Роль → Метод → Рабочий продукт**):
 
 | Вид | Что | Примеры |
 |-----|-----|---------|
@@ -175,7 +175,7 @@ export TELEGRAM_CHAT_ID="your-id"
 
 | Термин | Значение |
 |--------|---------|
-| IWE | Intelligent Working Environment — интеллектуальная рабочая среда |
+| IWE | Intellectual Work Environment — интеллектуальная рабочая среда |
 | Экзокортекс | Подсистема памяти IWE (CLAUDE.md + MEMORY.md + memory/) |
 | Pack | Предметная база знаний (source-of-truth для домена) |
 | DS-strategy | Личный стратегический хаб (приватный репо) |
@@ -203,5 +203,5 @@ export TELEGRAM_CHAT_ID="your-id"
 - `DP.IWE.001` — что такое IWE, зачем, 5 архитектурных видов, сравнения (vs экзокортекс, vs агенты, vs second brain)
 - `DP.IWE.002` — шаблон и установка: пререквизиты, стоимость, роли, ОРЗ, FAQ, безопасность
 - `DP.EXOCORTEX.001` — модульный экзокортекс: 3 слоя, template-sync, standard/personal
-- `DP.ARCH.002` — тиры T1-T5: что доступно на каждом уровне
+- `DP.ARCH.002` — тиры T0-T4 + TM1-TM3 + TA1-TA4 + TD1: что доступно на каждом уровне
 - `DP.ROLE.001` — полный реестр ИИ-ролей (21 роль)

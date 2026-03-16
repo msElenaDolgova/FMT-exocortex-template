@@ -2,7 +2,7 @@
 
 **Статус:** Принято
 **Дата:** 2026-02-28
-**Контекст:** DS-exocortex, DS-ai-systems/setup
+**Контекст:** FMT-exocortex-template, DS-ai-systems/setup
 
 ---
 
@@ -36,7 +36,7 @@
 
 ## Решение
 
-Перенести `setup.sh` в корень DS-exocortex (рядом с `update.sh`).
+Перенести `setup.sh` в корень FMT-exocortex-template (рядом с `update.sh`).
 
 **Что перенесено:**
 - `setup.sh` — модифицирован: авто-определение TEMPLATE_DIR, убран шаг форка (пользователь форкает сам)
@@ -48,8 +48,8 @@
 
 **Новый пользовательский flow:**
 ```bash
-gh repo fork TserenTserenov/DS-exocortex --clone --remote
-cd DS-exocortex
+gh repo fork TserenTserenov/FMT-exocortex-template --clone
+cd FMT-exocortex-template
 bash setup.sh
 ```
 

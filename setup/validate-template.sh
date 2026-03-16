@@ -101,7 +101,7 @@ MISSING=0
 for f in CLAUDE.md ONTOLOGY.md README.md \
          memory/MEMORY.md memory/hard-distinctions.md \
          memory/protocol-open.md memory/protocol-close.md \
-         memory/navigation.md memory/roles.md \
+         memory/navigation.md \
          roles/strategist/scripts/strategist.sh; do
     if [ ! -f "$TEMPLATE_DIR/$f" ]; then
         echo ""

@@ -10,6 +10,13 @@
 
 set -euo pipefail
 
+# Cross-platform date offset: portable_date_offset <days_back> <format>
+portable_date_offset() {
+    local days="$1"
+    local fmt="${2:-%Y-%m-%d}"
+    date -v-${days}d +"$fmt" 2>/dev/null || date -d "$days days ago" +"$fmt" 2>/dev/null
+}
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SYNC_DIR="$(dirname "$SCRIPT_DIR")"
 STATE_DIR="$HOME/.local/state/exocortex"
@@ -160,7 +167,7 @@ dispatch() {
         ran=1
     elif (( 10#$HOUR < 12 )); then
         local yesterday
-        yesterday=$(date -v-1d +%Y-%m-%d 2>/dev/null || date -d "yesterday" +%Y-%m-%d 2>/dev/null || true)
+        yesterday=$(portable_date_offset 1)
         if [ -n "$yesterday" ] && [ ! -f "$STATE_DIR/strategist-note-review-$yesterday" ]; then
             log "→ strategist note-review (catch-up for yesterday $yesterday)"
             if "$STRATEGIST_SH" note-review >> "$LOG_FILE" 2>&1; then
@@ -179,6 +186,17 @@ dispatch() {
             mark_done "synchronizer-code-scan"
         else
             log "WARN: code-scan failed (will retry next dispatch)"
+        fi
+        ran=1
+    fi
+
+    # --- Синхронизатор: dt-collect (после code-scan) ---
+    if ! ran_today "synchronizer-dt-collect"; then
+        log "→ synchronizer dt-collect (hour=$HOUR)"
+        if "$SCRIPT_DIR/dt-collect.sh" >> "$LOG_FILE" 2>&1; then
+            mark_done "synchronizer-dt-collect"
+        else
+            log "WARN: dt-collect failed (will retry next dispatch)"
         fi
         ran=1
     fi
