@@ -5,6 +5,25 @@ All notable changes to FMT-exocortex-template will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] — 2026-03-16
+
+### Added
+- **Видеоинтеграция (WP-102)** — 6 сценариев связи видеозаписей с РП:
+  - С1: Авто-триаж при Day Open (шаг 5b) — сканирование папок Zoom, Телемост и др.
+  - С2: Предложение РП в план дня из привязанных видео
+  - С3: Еженедельный видео-ревью в Strategy Session
+  - С4: Транскрипция → Captures (через whisper, опционально)
+  - С5: Видео → Посты и контент (через творческий конвейер)
+  - С6: Напоминания о необработанных видео (>stale_days)
+- **day-rhythm-config.yaml → `video`** — секция конфигурации: directories (массив), extensions, stale_days, auto_transcribe, content
+- **video-scan.sh** — скрипт сканирования (`roles/synchronizer/scripts/`): --new, --stale, --dry-run
+- **protocol-close.md** — шаг «Видео за день» в Day Close + пункт в чеклисте Session Close
+- **protocol-work.md §2b** — сценарии транскрипции и генерации контента из видео
+
+### Changed
+- **protocol-open.md** — шаблоны DayPlan и WeekPlan дополнены секцией «Видеозаписи» и «Видео-ревью»
+- Повестка Strategy Session — добавлен пункт «Видео-ревью (С3)»
+
 ## [0.7.0] — 2026-03-16
 
 ### Added
