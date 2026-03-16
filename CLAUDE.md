@@ -134,7 +134,7 @@ Level 3: DS (третьи принципы)        ← производные о
 Политика: ≤11 файлов. Справочники ≤100. Протоколы ≤150. Реестры (MEMORY, hard-distinctions) ≤200 + чистка на Close. Кросс-системное → memory/. Системное → repo/CLAUDE.md.
 Backup на Close: `memory/ + CLAUDE.md → DS-strategy/exocortex/`
 
-> **Рабочая директория:** Все сессии Claude Code открывать из `{{WORKSPACE_DIR}}/` (корень workspace). НЕ из sub-директорий (`DS-strategy/`, `DS-IT-systems/` и т.д.) — иначе `memory/` не резолвится. `{{WORKSPACE_DIR}}/memory/` — симлинк на auto-memory Claude Code.
+> **Рабочая директория:** Все сессии Claude Code открывать из `/Users/elenadolgova/IWE/` (корень workspace). НЕ из sub-директорий (`DS-strategy/`, `DS-IT-systems/` и т.д.) — иначе `memory/` не резолвится. `/Users/elenadolgova/IWE/memory/` — симлинк на auto-memory Claude Code.
 
 ---
 
