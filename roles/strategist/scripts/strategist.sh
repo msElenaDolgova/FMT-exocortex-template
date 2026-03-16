@@ -10,7 +10,7 @@ REPO_DIR="$(dirname "$SCRIPT_DIR")"
 WORKSPACE="/Users/elenadolgova/IWE/DS-strategy"
 PROMPTS_DIR="$REPO_DIR/prompts"
 LOG_DIR="$HOME/logs/strategist"
-CLAUDE_PATH="{{CLAUDE_PATH}}"
+CLAUDE_PATH="/opt/homebrew/bin/claude"
 
 # Создаём папку для логов
 mkdir -p "$LOG_DIR"
