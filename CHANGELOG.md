@@ -5,6 +5,13 @@ All notable changes to FMT-exocortex-template will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
 
+## [0.8.7] — 2026-03-17
+
+### Added
+- **Чеклист-верификация (Haiku R23)** — блокирующее правило в CLAUDE.md §2: после любого протокола с чеклистом запускается sub-agent Haiku в роли R23 Верификатор для независимой проверки каждого пункта (VR.SOTA.002 context isolation)
+- **Шаг 10 в Алгоритм Close** (protocol-close.md) — верификация по чеклисту как обязательный финальный шаг (Session Close)
+- **Шаг 5 в Day Close** (protocol-close.md) — верификация по чеклисту перед согласованием с пользователем
+
 ## [0.8.6] — 2026-03-17
 
 ### Added
