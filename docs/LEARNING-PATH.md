@@ -1583,6 +1583,51 @@ DS-strategy/
 
 ---
 
+#### «Как работать с IWE на двух устройствах (ноут + десктоп)?»
+
+**Что происходит.** У тебя два компьютера (возможно на разных ОС). Нужно одинаковое окружение и возможность переключаться между ними.
+
+**Архитектура.** IWE состоит из слоёв с разными механизмами синхронизации:
+
+| # | Слой | Механизм | Кросс-ОС |
+|---|------|----------|-----------|
+| 1 | Репо (код, Pack, DS) | git push/pull | Да |
+| 2 | Экзокортекс (CLAUDE.md, memory/) | git backup в DS-strategy → restore на втором устройстве | Да |
+| 3 | Claude Code конфиг (.claude/) | Часть в git (exocortex backup), часть локальная | Да (JSON) |
+| 4 | VS Code | Settings Sync (встроенный, через GitHub) | Да |
+| 5 | MCP серверы | Шаблон конфига + envsubst (пути различаются между ОС) | Шаблон + platform-specific |
+| 6 | Секреты (.env, API keys) | Менеджер паролей (1Password CLI / Bitwarden CLI) | Да |
+| 7 | Cron/LaunchAgents | macOS: plist. Linux: systemd/cron. Setup-скрипт в репо | Разные форматы |
+| 8 | Пакеты (brew, apt) | Brewfile (macOS) + аналог для Linux | Setup-скрипт |
+
+**Критичное правило: Push before switch.** Перед переключением на другое устройство — push all dirty repos. Проверка:
+
+```bash
+for repo in ~/IWE/*/; do
+  [ -d "$repo/.git" ] && git -C "$repo" status --porcelain | grep -q . && echo "DIRTY: $repo"
+done
+```
+
+**Кросс-ОС нюансы:**
+- **Пути:** Использовать `~/IWE/` (тильда кросс-платформенна), или переменную `$IWE_HOME`
+- **Symlinks:** `memory/` → `.claude/...` — на каждом устройстве свой `setup.sh` создаёт symlinks
+- **LaunchAgents vs systemd:** Шаблоны обоих хранятся в репо, `setup.sh` ставит нужный
+- **MCP пути:** `claude_desktop_config.json` содержит абсолютные пути — использовать шаблон + envsubst или platform-specific configs
+- **Line endings:** `.gitattributes` с `* text=auto`
+
+**Bootstrap нового устройства:**
+
+```bash
+git clone <all-repos> ~/IWE/
+cd ~/IWE && ./setup.sh   # создаёт symlinks, ставит пакеты, настраивает cron
+```
+
+`setup.sh` определяет ОС (`uname`) и выполняет нужные действия. Живёт в DS-ecosystem-development или dotfiles-репо.
+
+**Где:** § 2.2 (от шаблона к workspace), § 5.2 (память)
+
+---
+
 ### Рекомендованная последовательность изучения
 
 #### День 1: Ориентация (1.5 часа)
