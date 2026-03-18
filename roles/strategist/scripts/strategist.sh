@@ -114,8 +114,8 @@ acquire_lock() {
         log "SKIP: $scenario already running (lock exists: $lockfile)"
         exit 2  # non-zero → scheduler won't mark_done
     fi
-    # Auto-cleanup lock on exit
-    trap "rmdir '$lockfile' 2>/dev/null" EXIT
+    # Auto-cleanup lock on ANY exit (including set -e failures in run_claude)
+    trap "rmdir '$lockfile' 2>/dev/null; trap - EXIT" EXIT INT TERM
 }
 
 # Читаем strategy_day из конфига (L4 Personal)
@@ -196,14 +196,14 @@ case "$1" in
         # Canary: count bold notes before (exclude 🔄 — deferred ideas stay bold by design)
         FLEETING="$WORKSPACE/inbox/fleeting-notes.md"
         BOLD_BEFORE=$(grep -c '^\*\*' "$FLEETING" 2>/dev/null || echo 0)
-        BOLD_NEW_BEFORE=$(grep '^\*\*' "$FLEETING" 2>/dev/null | grep -v '🔄' | grep -c '.' || echo 0)
+        BOLD_NEW_BEFORE=$(grep '^\*\*' "$FLEETING" 2>/dev/null | grep -v '🔄' | wc -l | tr -d ' ')
         log "Canary: $BOLD_BEFORE bold total ($BOLD_NEW_BEFORE new, $(( BOLD_BEFORE - BOLD_NEW_BEFORE )) deferred 🔄)"
 
         run_claude "note-review"
 
         # Canary: count bold notes after — only NEW bold (without 🔄) should decrease
         BOLD_AFTER=$(grep -c '^\*\*' "$FLEETING" 2>/dev/null || echo 0)
-        BOLD_NEW_AFTER=$(grep '^\*\*' "$FLEETING" 2>/dev/null | grep -v '🔄' | grep -c '.' || echo 0)
+        BOLD_NEW_AFTER=$(grep '^\*\*' "$FLEETING" 2>/dev/null | grep -v '🔄' | wc -l | tr -d ' ')
         log "Canary: $BOLD_AFTER bold total ($BOLD_NEW_AFTER new)"
         NON_BOLD=$(grep -c '^[^*#>-]' "$FLEETING" 2>/dev/null || echo 0)
         log "Non-bold content lines: $NON_BOLD"
@@ -241,6 +241,16 @@ case "$1" in
 
         notify_telegram "note-review"
         ;;
+    "baby-rhythm-review")
+        acquire_lock "baby-rhythm-review"
+        if already_ran_today "baby-rhythm-review"; then
+            log "SKIP: baby-rhythm-review already completed today"
+            exit 0
+        fi
+        log "Tuesday: running baby rhythm review"
+        run_claude "baby-rhythm-review"
+        notify_telegram "baby-rhythm-review"
+        ;;
     "day-close")
         log "Manual: running day close"
         run_claude "day-close"
@@ -251,7 +261,7 @@ case "$1" in
         run_claude "strategy-session"
         ;;
     *)
-        echo "Usage: $0 {morning|note-review|week-review|session-prep|strategy-session|day-plan|day-close}"
+        echo "Usage: $0 {morning|note-review|week-review|session-prep|strategy-session|day-plan|day-close|baby-rhythm-review}"
         echo ""
         echo "Scenarios:"
         echo "  morning           - 4:00 EET daily (session-prep on Mon, day-plan others)"
