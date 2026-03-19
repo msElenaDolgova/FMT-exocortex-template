@@ -77,6 +77,8 @@ done
 | #N | ... | done / partial |
 
 **Коммиты:** N в M репо
+**WakaTime:** Xh Ym | **Бюджет закрыт:** ~Nh | **Мультипликатор:** N.Nx
+**Бюджет недели W{N}:** осталось Zh из Bh
 
 **Что нового узнал:** ...
 
@@ -142,6 +144,7 @@ done
    - Если РП done → verdict обязателен. Если in_progress → skip (проверка при следующем Close)
    - Verdict НЕ блокирует Close — записывается в отчёт для решения человека
 2. Обновить MEMORY.md (статус РП) + **WP-REGISTRY.md** (`DS-strategy/docs/WP-REGISTRY.md`): обновить статус РП, дату. Если новые РП создавались в Open — проверить, что они уже в реестре
+2b. **Linear sync** (если Linear MCP подключён): `linear-sync.sh` (`DS-IT-systems/DS-ai-systems/synchronizer/scripts/`). Команды: `--close N` (done), `--status N STATE` (статус), `--create N TITLE` (новый). Или без аргументов = полная синхронизация. Git = source of truth, Linear = зеркало.
 3. Зафиксировать: что сделано, что осталось
 4. Закоммитить (с подтверждением)
 5. Обновить `DS-strategy/current/Plan W{N}...` (статусы РП). **Grep по номеру РП** (`grep -n "| {N} |" WeekPlan...`) — РП может упоминаться в нескольких таблицах (основная + «План на день» + inbox triage). Обновить ВСЕ упоминания
@@ -208,6 +211,7 @@ done
 - [ ] DS-strategy/current/DayPlan обновлён (статусы ВСЕХ строк в таблице: РП + ad-hoc)
 - [ ] Captures применены
 - [ ] **Knowledge-mcp синхронизация:** Были коммиты в Pack или DS? → (1) источник зарегистрирован в `sources.json`? Нет → добавить. (2) `selective-reindex.sh` выполнен? (3) Тест: `search` по ключевому слову из сегодняшних изменений → находит актуальную версию
+- [ ] **Linear sync:** статусы РП в Linear соответствуют git (done → closed, новые → created)
 - [ ] **Repo CLAUDE.md:** feat-коммиты → новые правила для CLAUDE.md репо?
 - [ ] **WP context:** коммиты реализуют пункт WP-плана → пункт done?
 - [ ] **Draft-list:** Pack обогащён → предложить черновик? Черновики из сессии → draft-list обновлён?
@@ -217,6 +221,7 @@ done
 - [ ] Backup → DS-strategy/exocortex/ синхронизирован
 - [ ] Context file: done → `mv inbox/WP-*.md → archive/wp-contexts/` (сразу при Close)
 - [ ] **Верификация compliance:** запускался ли /verify в этой сессии? (да → ✅, нет → ❌ + причина)
+- [ ] **WakaTime + Мультипликатор:** часы за день, бюджет закрыт (сумма оценок × % выполнения), мультипликатор (бюджет/WakaTime), остаток бюджета недели
 - [ ] Отчёт Close сформирован
 - [ ] WP Context File создан/обновлён при ПЕРВОМ Close
 - [ ] Новое репо → MAPSTRATEGIC.md + Strategy.md
