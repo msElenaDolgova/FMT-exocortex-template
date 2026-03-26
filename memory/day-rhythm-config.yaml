@@ -21,7 +21,8 @@ news:
       feeds: []                 # RSS URLs (empty = WebSearch fallback)
     - name: Engineering
       query: "software engineering systems thinking"
-      feeds: []
+      feeds:
+        - "https://rss.siviae.me/telegram/channel/nikitonsky_pub"  # Никитонский — engineering, design
     - name: Инвестиции
       query: "инвестиции фондовый рынок"
       feeds:
