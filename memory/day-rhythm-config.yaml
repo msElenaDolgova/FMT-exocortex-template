@@ -21,6 +21,10 @@ news:
     - name: Engineering
       query: "software engineering systems thinking"
       feeds: []
+    - name: Инвестиции
+      query: "инвестиции фондовый рынок"
+      feeds:
+        - "https://rss.siviae.me/telegram/channel/crimsondigest"  # Кримсон — структурный дефицит, commodities
 
 video:
   enabled: false                # Enable video scanning at Day Open
