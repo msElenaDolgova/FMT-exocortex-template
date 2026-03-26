@@ -47,6 +47,10 @@ video:
   content:
     suggest_posts: true         # Suggest post ideas from transcribed videos
 
+day_close:
+  practice_checkin: true        # Ask about difficulties in self-dev practices at Day Close
+  practice_checkin_file: "DS-strategy/docs/practice-difficulties.md"
+
 pomodoro:
   work_minutes: 25
   break_minutes: 5
