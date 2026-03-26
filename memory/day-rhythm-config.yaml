@@ -8,9 +8,13 @@ day_open:
   self_dev_missing_alert: true  # Explicitly say if no self-dev in today's plan
 
 news:
-  enabled: false                # Enable news digest at Day Open (requires WebSearch)
+  enabled: true                 # Enable news digest at Day Open (requires WebSearch)
   max_items_per_topic: 3
   topics:
+    - name: Техлид
+      query: "engineering management tech lead"
+      feeds:
+        - "https://lethain.com/feeds.xml"   # Will Larson — раз в месяц
     - name: AI
       query: "artificial intelligence LLM agents"
       feeds: []                 # RSS URLs (empty = WebSearch fallback)
