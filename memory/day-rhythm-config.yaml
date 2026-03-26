@@ -6,6 +6,7 @@ day_open:
   strategy_day: monday          # Day for strategizing session (monday..sunday)
   self_dev_slot: 1              # Slot number for self-development (always first by default)
   self_dev_missing_alert: true  # Explicitly say if no self-dev in today's plan
+  note_review_report: true      # Show Note-Review report (new notes from fleeting-notes) at Day Open
 
 news:
   enabled: true                 # Enable news digest at Day Open (requires WebSearch)
