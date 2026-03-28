@@ -31,7 +31,7 @@ Fallback: файла нет → пропустить, работать из ко
 **Только actionable:** пропускать read-only и upstream без push-доступа.
 
 ### 1c. Заметки
-Governance-inbox (`fleeting-notes.md`) → категоризация: → РП / → Backlog / → Контент / → Pack / → Обсудить / → Шум. НЕ удалять.
+`{{GOVERNANCE_REPO}}/inbox/fleeting-notes.md` → категоризация: → РП / → Backlog / → Контент / → Pack / → Обсудить / → Шум. НЕ удалять.
 
 ### 2. План на сегодня
 **Приоритет входов:**
@@ -43,7 +43,7 @@ Governance-inbox (`fleeting-notes.md`) → категоризация: → РП 
 Mandatory РП отсутствуют в WeekPlan → «Требует внимания».
 
 ### 3. Саморазвитие
-Руководство, где остановился, черновики (governance `drafts/`).
+Руководство, где остановился, черновики (`{{GOVERNANCE_REPO}}/drafts/`).
 
 ### 4. Стратегирование
 Если strategy_day → DayPlan НЕ создавать, план в WeekPlan. Пропустить шаг 7.
@@ -74,7 +74,7 @@ Scout report. Не проревьюен → «Требует внимания».
 Собрать из шагов 1–6. Нет → не выводить.
 
 ### 7. Запись
-**DayPlan:** governance `current/DayPlan YYYY-MM-DD.md` по шаблону ниже. Предыдущий → `archive/day-plans/`. Коммит.
+**DayPlan:** `{{GOVERNANCE_REPO}}/current/DayPlan YYYY-MM-DD.md` по шаблону ниже. Предыдущий → `archive/day-plans/`. Коммит.
 **Compact:** вывести в VS Code по шаблону ниже.
 
 ---
