@@ -14,7 +14,16 @@ version: 1.1.0
 > **Issues — только actionable:** пропускать read-only репо (CLAUDE.md) и upstream без push-доступа (Base, чужие fork).
 > **Шаблоны:** ниже (после алгоритма).
 
+## БЛОКИРУЮЩЕЕ: пошаговое исполнение
+
+Day Open = протокол. Исполнять ТОЛЬКО пошагово через TodoWrite.
+Каждый шаг алгоритма ниже → отдельная задача (pending → in_progress → completed).
+Переход к следующему — ТОЛЬКО после отметки текущего. Шаг невозможен → blocked (не пропускать молча).
+**Почему:** без TodoWrite агент пропускает шаги из-за загрязнения контекста (SOTA.002).
+
 ## Алгоритм
+
+<!-- EXTENSION POINT: загрузить extensions/day-open.before.md если существует -->
 
 ### 1. Вчера
 Прочитать вчерашний DayPlan (`archive/day-plans/` или `current/`). Взять:
@@ -72,6 +81,8 @@ Scout report. Не проревьюен → «Требует внимания».
 
 ### 6b. Требует внимания
 Собрать из шагов 1–6. Нет → не выводить.
+
+<!-- EXTENSION POINT: загрузить extensions/day-open.after.md если существует -->
 
 ### 7. Запись
 **DayPlan:** `{{GOVERNANCE_REPO}}/current/DayPlan YYYY-MM-DD.md` по шаблону ниже. Предыдущий → `archive/day-plans/`. Коммит.

@@ -8,6 +8,7 @@
 ## § Масштаб: День → skill `/day-open`
 
 > **Триггер:** «открывай» / «открывай день». Полный алгоритм → `.claude/skills/day-open/SKILL.md`.
+> **Исполнение:** пошагово через TodoWrite (каждый шаг = задача, блокирующее). Аналогично Close.
 
 ---
 
@@ -75,11 +76,9 @@
 
 **Шаг 2.** Дождаться согласования.
 
-**Шаг 3.** Определить файлы/репо. Context file (`<governance-repo>/inbox/WP-{N}*.md`) — прочитать. Иерархия доверия: код → документы → WP context.
+**Шаг 3.** Определить файлы/репо. Context file (`<governance-repo>/inbox/WP-{N}*.md`, например DS-my-strategy) — прочитать. Иерархия доверия: код → документы → WP context.
 
-**Шаг 4.** Регистрация в `<governance-repo>/inbox/open-sessions.log`: `YYYY-MM-DD HH:MM | WP-N | модель | описание`. Исключения — не регистрировать.
-
-<!-- EXTENSION POINT: загрузить extensions/protocol-open.after.md если существует -->
+**Шаг 4.** Регистрация в `<governance-repo>/inbox/open-sessions.log` (например DS-my-strategy): `YYYY-MM-DD HH:MM | WP-N | модель | описание`. Исключения — не регистрировать.
 
 > Продолжение работы над тем же РП — повторный Ритуал не нужен.
 
