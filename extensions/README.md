@@ -63,6 +63,18 @@
 
 Подробности: [params.yaml](../params.yaml).
 
+## Конфиг Day Open (day-rhythm-config.yaml)
+
+Поведение Day Open управляется через `memory/day-rhythm-config.yaml` (не params.yaml).
+
+| Параметр | Что управляет |
+|----------|---------------|
+| `budget_spread.enabled` | Распределять недельный бюджет РП по дням (true/false) |
+| `budget_spread.threshold_h` | Минимальный недельный бюджет для участия в расчёте (по умолчанию: 4h) |
+| `budget_spread.rounding` | Шаг округления daily_slot (по умолчанию: 0.5h) |
+
+**Пример:** РП с бюджетом 6h/нед, среда (days_left=3) → daily_slot = round(6/3, 0.5) = 2h.
+
 ## Правила
 
 1. Имена файлов: `<protocol>.<hook>.md` — строго по формату

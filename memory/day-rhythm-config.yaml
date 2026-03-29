@@ -47,6 +47,11 @@ video:
 #   - category: content            # Or by category (content, dev, ops)
 #     min_count: 1
 
+budget_spread:
+  enabled: true          # Distribute weekly budget of WPs across remaining days
+  threshold_h: 4         # Only WPs with weekly budget ≥ this value are spread
+  rounding: 0.5          # Round daily_slot to nearest N hours
+
 pomodoro:
   work_minutes: 25
   break_minutes: 5
