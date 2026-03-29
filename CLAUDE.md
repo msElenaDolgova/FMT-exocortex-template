@@ -24,15 +24,13 @@
 | **День** | `/day-open` («открывай») | Между Day Open и Day Close | `/run-protocol day-close` |
 | **Неделя** | — | — | `/run-protocol week-close` |
 
-> **Первая неделя:** Если WeekPlan ещё не создан — работайте на уровне сессий. Day Open и Week Close подключатся после первой стратегической сессии ([SETUP-GUIDE §2](docs/SETUP-GUIDE.md)).
-
 ### Блокирующие правила
 
 1. **WP Gate:** ЛЮБОЕ задание → протокол Открытия → ДО начала работы.
 2. **Push:** «заливай» / «запуши» → commit + push без доп. вопросов. Push ДО отчёта Закрытия.
 3. **Close:** Триггер Закрытия → протокол Закрытия → выполнить.
 4. **Чеклист-верификация (Haiku R23):** Quick Close и Day Close — sub-agent Haiku R23 (context isolation). Исключения: сессия ≤15 мин или без изменений файлов.
-5. **Pull-on-Touch:** `git pull --rebase` при первом изменении в репо за сессию (не перед каждым коммитом). Без Obsidian: см. §10.
+5. **Pull-on-Touch:** `git pull --rebase` при первом изменении в репо за сессию (не перед каждым коммитом). Без Obsidian: см. §9.
 
 ### Протокол Работы (полный → `memory/protocol-work.md`)
 
@@ -76,54 +74,28 @@
 
 ## Различения → `.claude/rules/distinctions.md`
 
-## 7. Расширения и параметры
+## 7. Обновление этого файла
 
-### Extension Points (drop-in)
-
-> При встрече `<!-- EXTENSION POINT: загрузить extensions/<file>.md если существует -->` в протоколах — **проверить файл и вставить содержимое**.
-
-**Механика:**
-1. Увидел комментарий `<!-- EXTENSION POINT: загрузить extensions/X.md -->` в протоколе
-2. Проверь: файл `extensions/X.md` существует? (Glob)
-3. Да → прочитай и выполни как часть протокола
-4. Нет → пропусти молча
-
-**Формат имён:** `<protocol>.<hook>.md` (например `protocol-close.checks.md`, `day-close.after.md`)
-**Документация:** `extensions/README.md`
-
-### params.yaml (персистентные параметры)
-
-> Протоколы **проверяют** `params.yaml` перед условными шагами.
-
-**Механика:**
-1. Перед условным шагом (video check, multiplier, reflection) → прочитать `params.yaml`
-2. Параметр `false` → пропустить шаг
-3. Файл не существует → использовать defaults (всё включено, кроме `reflection_enabled`)
-
-## 8. Обновление этого файла
-
-> **3 слоя:** L1 (§1-§8) = платформа (`update.sh`). L2 (§9) = staging. L3 (§10) = авторское.
+> **3 слоя:** L1 (§1-§7) = платформа (`update.sh`). L2 (§8) = staging. L3 (§9) = авторское.
 
 - Протоколы → `memory/protocol-*.md`
 - Различение (1-3 строки) → `.claude/rules/distinctions.md`
 - Форматирование → `.claude/rules/formatting.md`
 - Стабильные знания → `memory/*.md`
-- Расширения → `extensions/<protocol>.<hook>.md`
-- Параметры → `params.yaml`
-- Свои правила → §9 (staging) или §10 (авторское)
+- Свои правила → §8 (staging) или §9 (авторское)
 
 <!-- PLATFORM-END -->
 
 ---
 
-## 9. Staging (обкатка → шаблон)
+## 8. Staging (обкатка → шаблон)
 
 > Правила на обкатке. Работают → переносятся в шаблон (L1).
 > **Перенесено в L1 (20 мар):** UC Gate, межсистемные процессы, чеклист-верификация.
 
 ---
 
-## 10. Авторское (только мой IWE)
+## 9. Авторское (только мой IWE)
 
 ### Блокирующие (авторские)
 
@@ -137,8 +109,8 @@
 
 ### Read-only репо
 
-<!-- Добавьте свои read-only репо. Пример: -->
-<!-- > **your-org/your-repo** — ⛔ READ-ONLY. -->
+> **DS-IT-systems/SystemsSchool_bot** — ⛔ READ-ONLY.
+> **DS-IT-systems/aisystant** — ⛔ READ-ONLY.
 
 ### README.md (FMT-exocortex-template)
 
