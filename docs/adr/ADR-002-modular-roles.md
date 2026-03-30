@@ -2,11 +2,7 @@
 
 **Статус:** Принято
 **Дата:** 2026-03-01
-<<<<<<< Updated upstream
 **Контекст:** FMT-exocortex-template/roles, PACK-digital-platform (DP.D.033, DP.ROLE.001)
-=======
-**Контекст:** DS-exocortex/roles, PACK-digital-platform (DP.D.033, DP.AGENT.001)
->>>>>>> Stashed changes
 
 ---
 

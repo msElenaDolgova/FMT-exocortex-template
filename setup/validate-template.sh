@@ -1,5 +1,5 @@
 #!/bin/bash
-# Validate Template — проверка целостности DS-exocortex
+# Validate Template — проверка целостности FMT-exocortex-template
 #
 # 5 проверок:
 # 1. Нет автор-специфичного контента

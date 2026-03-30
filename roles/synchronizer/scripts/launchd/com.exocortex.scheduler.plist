@@ -7,7 +7,7 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/elenadolgova/IWE/DS-exocortex/roles/synchronizer/scripts/scheduler.sh</string>
+        <string>/Users/elenadolgova/IWE/FMT-exocortex-template/roles/synchronizer/scripts/scheduler.sh</string>
         <string>dispatch</string>
     </array>
 
@@ -20,19 +20,21 @@
          12:00 — extractor
          15:00 — extractor
          18:00 — extractor
-         21:30 — strategist note-review + extractor
+         21:00 — extractor
+         23:00 — strategist note-review
     -->
     <key>StartCalendarInterval</key>
     <array>
         <dict><key>Hour</key><integer>0</integer><key>Minute</key><integer>0</integer></dict>
         <dict><key>Hour</key><integer>3</integer><key>Minute</key><integer>0</integer></dict>
-        <dict><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>{{TIMEZONE_HOUR}}</integer><key>Minute</key><integer>0</integer></dict>
         <dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>0</integer></dict>
         <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
         <dict><key>Hour</key><integer>12</integer><key>Minute</key><integer>0</integer></dict>
         <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>0</integer></dict>
         <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>0</integer></dict>
-        <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>23</integer><key>Minute</key><integer>0</integer></dict>
     </array>
 
     <key>StandardOutPath</key>

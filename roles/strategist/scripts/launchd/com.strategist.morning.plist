@@ -7,14 +7,14 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/elenadolgova/IWE/DS-exocortex/roles/strategist/scripts/strategist.sh</string>
+        <string>/Users/elenadolgova/IWE/FMT-exocortex-template/roles/strategist/scripts/strategist.sh</string>
         <string>morning</string>
     </array>
 
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
-        <integer>10</integer>
+        <integer>{{TIMEZONE_HOUR}}</integer>
         <key>Minute</key>
         <integer>0</integer>
     </dict>

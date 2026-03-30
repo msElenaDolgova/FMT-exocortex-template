@@ -18,7 +18,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)/memory"
 WORKSPACE="/Users/elenadolgova/IWE"
-LOG_DIR="{{HOME_DIR}}/logs/synchronizer"
+LOG_DIR="/Users/elenadolgova/logs/synchronizer"
 DATE=$(date +%Y-%m-%d)
 LOG_FILE="$LOG_DIR/video-scan-$DATE.log"
 STATE_FILE="$LOG_DIR/.video-scan-last"

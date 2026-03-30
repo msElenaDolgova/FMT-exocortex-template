@@ -34,7 +34,7 @@ STATE_DIR="$HOME/.local/state/exocortex"
 LOG_DIR="$HOME/logs/synchronizer"
 LOG_FILE="$LOG_DIR/scheduler-$(date +%Y-%m-%d).log"
 
-ROLES_DIR="/Users/elenadolgova/IWE/DS-exocortex/roles"
+ROLES_DIR="/Users/elenadolgova/IWE/FMT-exocortex-template/roles"
 NOTIFY_SH="$SCRIPT_DIR/notify.sh"
 
 # Таймаут на задачи (сек): предотвращает блокировку dispatch зависшей задачей
@@ -205,8 +205,8 @@ dispatch() {
         ran=1
     fi
 
-    # --- Стратег: note-review (21:00+) ---
-    if (( 10#$HOUR >= 21 )) && ! ran_today "strategist-note-review"; then
+    # --- Стратег: note-review (22:00+) ---
+    if (( 10#$HOUR >= 22 )) && ! ran_today "strategist-note-review"; then
         log "→ strategist note-review (catch-up: hour=$HOUR)"
         if timeout "$TASK_TIMEOUT_LONG" "$STRATEGIST_SH" note-review >> "$LOG_FILE" 2>&1; then
             mark_done "strategist-note-review"

@@ -4,23 +4,23 @@
 
 schedules:
   strategist:
-    script: "/Users/elenadolgova/IWE/DS-exocortex/roles/strategist/scripts/strategist.sh"
+    script: "/Users/elenadolgova/IWE/FMT-exocortex-template/roles/strategist/scripts/strategist.sh"
     scenarios:
       morning:
         type: daily
-        hour: "10"     # Mon=session-prep, Tue-Sun=day-plan
+        hour: "{{TIMEZONE_HOUR}}"     # Mon=session-prep, Tue-Sun=day-plan
         window: "4-21"                # После 22:00 бесполезен
       note-review:
         type: daily
-        hour: 21                      # 21:30 — после вечернего укладывания
-        window: "21-23"
+        hour: 23
+        window: "22-23"
       week-review:
         type: weekly
         day: 1                        # Monday
         hour: 0
 
   extractor:
-    script: "/Users/elenadolgova/IWE/DS-exocortex/roles/extractor/scripts/extractor.sh"
+    script: "/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/scripts/extractor.sh"
     scenarios:
       inbox-check:
         type: interval

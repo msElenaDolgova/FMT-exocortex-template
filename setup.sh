@@ -310,7 +310,7 @@ if $DRY_RUN; then
     echo "    {{CLAUDE_PROJECT_SLUG}} → $CLAUDE_PROJECT_SLUG"
     echo "    {{TIMEZONE_HOUR}} → $TIMEZONE_HOUR"
     echo "    {{TIMEZONE_DESC}} → $TIMEZONE_DESC"
-    echo "    {{HOME_DIR}} → $HOME_DIR"
+    echo "    /Users/elenadolgova → $HOME_DIR"
 else
     find "$TEMPLATE_DIR" -type f \( -name "*.md" -o -name "*.json" -o -name "*.sh" -o -name "*.plist" -o -name "*.yaml" -o -name "*.yml" \) | while IFS= read -r file; do
         sed_inplace \
@@ -320,7 +320,7 @@ else
             -e "s|{{CLAUDE_PROJECT_SLUG}}|$CLAUDE_PROJECT_SLUG|g" \
             -e "s|{{TIMEZONE_HOUR}}|$TIMEZONE_HOUR|g" \
             -e "s|{{TIMEZONE_DESC}}|$TIMEZONE_DESC|g" \
-            -e "s|{{HOME_DIR}}|$HOME_DIR|g" \
+            -e "s|/Users/elenadolgova|$HOME_DIR|g" \
             "$file"
     done
 

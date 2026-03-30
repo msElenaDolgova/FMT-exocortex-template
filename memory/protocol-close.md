@@ -181,7 +181,7 @@ done
 
 ```bash
 # Запуск одной командой:
-{{WORKSPACE_DIR}}/DS-IT-systems/DS-ai-systems/synchronizer/scripts/day-close.sh
+/Users/elenadolgova/IWE/DS-IT-systems/DS-ai-systems/synchronizer/scripts/day-close.sh
 ```
 
 Скрипт выполняет:

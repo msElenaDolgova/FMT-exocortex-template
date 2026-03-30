@@ -16,7 +16,7 @@ REPO_DIR="$(dirname "$SCRIPT_DIR")"
 WORKSPACE="/Users/elenadolgova/IWE"
 PROMPTS_DIR="$REPO_DIR/prompts"
 LOG_DIR="/Users/elenadolgova/logs/extractor"
-CLAUDE_PATH="/opt/homebrew/bin/claude"
+CLAUDE_PATH="{{CLAUDE_PATH}}"
 ENV_FILE="/Users/elenadolgova/.config/aist/env"
 
 # AI CLI: переопределение через переменные окружения (см. strategist.sh)
@@ -47,7 +47,7 @@ notify() {
 
 notify_telegram() {
     local scenario="$1"
-    local notify_script="$WORKSPACE/DS-exocortex/roles/synchronizer/scripts/notify.sh"
+    local notify_script="$WORKSPACE/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh"
     if [ -f "$notify_script" ]; then
         "$notify_script" extractor "$scenario" >> "$LOG_FILE" 2>&1 || true
     fi

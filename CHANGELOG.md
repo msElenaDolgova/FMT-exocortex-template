@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to DS-exocortex will be documented in this file.
+All notable changes to FMT-exocortex-template will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
@@ -467,7 +467,6 @@ Versioning: [Semantic Versioning](https://semver.org/).
 ## [0.5.0] — 2026-03-10
 
 ### Added
-<<<<<<< Updated upstream
 - **CHANGELOG.md** — история изменений шаблона в формате release notes
 - **update.sh: release notes** — при обновлении показывает «Что нового» из CHANGELOG
 - **update.sh: re-substitution** — автоматическая подстановка рабочей директории после обновления
@@ -476,21 +475,6 @@ Versioning: [Semantic Versioning](https://semver.org/).
 ### Fixed
 - **Захардкоженные пути** — 14 файлов теперь используют переменную рабочей директории (шаблон работает с любым расположением)
 - **update.sh** — убран хардкод пути, теперь динамическое определение директории
-=======
-- **CHANGELOG.md** — human-readable история изменений шаблона (Apple-style release notes)
-- **update.sh: release notes** — при обновлении показывает «What's New» из CHANGELOG
-- **update.sh: re-substitution** — автоматическая подстановка `/Users/elenadolgova/IWE` после merge upstream (раньше плейсхолдеры оставались сырыми)
-- **DATA-POLICY.md** — политика данных IWE + acceptance gate в setup.sh
-
-### Fixed
-- **Hardcoded paths** — 14 файлов с `~/Github` или `$HOME/Github` заменены на `/Users/elenadolgova/IWE` (шаблон работает с любой рабочей директорией, не только `~/Github`)
-  - `strategist.sh`, `cleanup-processed-notes.sh`, `scheduler.sh` (shell-скрипты)
-  - `add-wp.md`, `check-plan.md`, `evening.md` (промпты стратега)
-  - `seed/strategy/CLAUDE.md` (6 вхождений)
-  - `memory/protocol-open.md`, `memory/fpf-reference.md`, `memory/checklists.md`
-  - `setup/validate-template.sh`
-- **update.sh fallback** — убран хардкод `~/Github/FMT-exocortex`, теперь только динамическое определение директории
->>>>>>> Stashed changes
 
 ### Changed
 - **Рабочая директория по умолчанию** — документация теперь рекомендует ~/IWE

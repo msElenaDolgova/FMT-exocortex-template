@@ -26,17 +26,6 @@
 
 ---
 
-## MCP-серверы
-
-**Claude Code 2.x:** `mcpServers` в `settings.local.json` игнорируется. Регистрировать через `claude mcp add`:
-```
-claude mcp add --transport http knowledge-mcp https://knowledge-mcp.aisystant.workers.dev/mcp
-claude mcp add --transport http ddt https://digital-twin-mcp.aisystant.workers.dev/mcp
-```
-Пишет в `.claude.json`. После добавления — перезапустить Claude Code.
-
----
-
 ## Навигация (Слой 3)
 
 | Тема | Файл |
