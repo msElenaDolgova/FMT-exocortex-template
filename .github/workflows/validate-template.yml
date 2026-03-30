@@ -7,6 +7,24 @@ on:
     branches: [main]
 
 jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck on all .sh files
+        run: |
+          FAIL=0
+          while IFS= read -r -d '' f; do
+            if ! shellcheck -S warning "$f"; then
+              FAIL=1
+            fi
+          done < <(find . -name "*.sh" -type f -print0)
+          exit $FAIL
+
   validate:
     runs-on: ubuntu-latest
     steps:
@@ -87,48 +105,17 @@ jobs:
           [ "$FAIL" -eq 0 ] && echo "PASS: All required files present"
           exit $FAIL
 
-      # 5. MCP-конфигурация
-      - name: Check MCP configuration
+      # 5. MCP — серверы подключаются через claude.ai/settings/connectors (не локально)
+      - name: Check MCP documentation
         run: |
-          FAIL=0
-          SETTINGS=".claude/settings.local.json"
-          if [ ! -f "$SETTINGS" ]; then
-            echo "FAIL: $SETTINGS not found"
+          # MCP servers (knowledge-mcp, ddt) are managed through claude.ai connectors
+          # Validate that setup.sh contains instructions for users
+          if grep -q "claude.ai/settings/connectors" setup.sh; then
+            echo "PASS: setup.sh contains MCP connector instructions"
+          else
+            echo "FAIL: setup.sh missing MCP connector instructions"
             exit 1
           fi
-
-          # Check mcpServers section exists
-          if ! python3 -c "import json; d=json.load(open('$SETTINGS')); assert 'mcpServers' in d" 2>/dev/null; then
-            echo "FAIL: mcpServers section missing in $SETTINGS"
-            FAIL=1
-          fi
-
-          # Check all 2 MCP servers are configured
-          for server in knowledge-mcp ddt; do
-            if ! python3 -c "import json; d=json.load(open('$SETTINGS')); assert '$server' in d['mcpServers']" 2>/dev/null; then
-              echo "FAIL: MCP server '$server' missing"
-              FAIL=1
-            fi
-          done
-
-          # Check URLs point to aisystant.workers.dev
-          BAD_URLS=$(python3 << 'PYEOF'
-          import json
-          d = json.load(open(".claude/settings.local.json"))
-          for name, cfg in d.get("mcpServers", {}).items():
-              url = cfg.get("url", "")
-              if "aisystant.workers.dev" not in url:
-                  print(name + ": " + url)
-          PYEOF
-          ) || true
-          if [ -n "$BAD_URLS" ]; then
-            echo "FAIL: MCP URLs not pointing to aisystant.workers.dev:"
-            echo "$BAD_URLS"
-            FAIL=1
-          fi
-
-          [ "$FAIL" -eq 0 ] && echo "PASS: MCP configuration valid (2 servers, correct URLs)"
-          exit $FAIL
 
       # 6. Только допустимые placeholders
       - name: Check placeholders are valid

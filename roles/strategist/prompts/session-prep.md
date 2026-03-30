@@ -1,14 +1,14 @@
 Выполни сценарий «Подготовка к сессии стратегирования» для роли Стратег (R1).
 
-Источник сценария: /Users/elenadolgova/IWE/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/scenarios/scheduled/01-strategy-session.md
+Источник сценария: {{WORKSPACE_DIR}}/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/scenarios/scheduled/01-strategy-session.md
 
 ## Контекст
 
-- **HUB (личные планы):** /Users/elenadolgova/IWE/DS-strategy/current/
-- **Документы стратегии:** /Users/elenadolgova/IWE/DS-strategy/docs/ (ВСЕ файлы: Strategy.md, Dissatisfactions.md, Session Agenda.md)
-- **Inbox:** /Users/elenadolgova/IWE/DS-strategy/inbox/ ([fleeting-notes.md](https://github.com/{{GITHUB_USER}}/DS-strategy/blob/main/inbox/fleeting-notes.md) + свежие файлы за неделю)
-- **SPOKE (планы репо):** /Users/elenadolgova/IWE/*/WORKPLAN.md
-- **Стратегические карты:** /Users/elenadolgova/IWE/*/MAPSTRATEGIC.md (если есть в репо)
+- **HUB (личные планы):** {{WORKSPACE_DIR}}/DS-strategy/current/
+- **Документы стратегии:** {{WORKSPACE_DIR}}/DS-strategy/docs/ (ВСЕ файлы: Strategy.md, Dissatisfactions.md, Session Agenda.md)
+- **Inbox:** {{WORKSPACE_DIR}}/DS-strategy/inbox/ ([fleeting-notes.md](https://github.com/{{GITHUB_USER}}/DS-strategy/blob/main/inbox/fleeting-notes.md) + свежие файлы за неделю)
+- **SPOKE (планы репо):** {{WORKSPACE_DIR}}/*/WORKPLAN.md
+- **Стратегические карты:** {{WORKSPACE_DIR}}/*/MAPSTRATEGIC.md (если есть в репо)
 - **MEMORY:** ~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/MEMORY.md
 
 ## Именование файлов в current/
@@ -17,7 +17,6 @@
 DS-strategy/
 ├── current/
 │   ├── WeekPlan W{N} YYYY-MM-DD.md    # план недели (Пн дата)
-│   ├── WeekReport W{N} YYYY-MM-DD.md  # отчёт недели (авто, Пн 00:00)
 │   └── DayPlan YYYY-MM-DD.md          # план дня
 ├── archive/                            # старые файлы
 ├── docs/                               # Strategy.md, Dissatisfactions.md, Session Agenda.md
@@ -28,33 +27,33 @@ DS-strategy/
 
 ## Предусловие
 
-> **WeekReport уже создан** сценарием week-review (Пн 00:00, за 4 часа до session-prep).
-> Подготовка к сессии НЕ собирает коммиты сама — читает готовый WeekReport.
+> **Итоги недели уже записаны** сценарием week-review (Пн 00:00, за 4 часа до session-prep) в секцию «Итоги W{N-1}» текущего WeekPlan.
+> Подготовка к сессии НЕ собирает коммиты сама — читает секцию итогов из WeekPlan.
 
 ## Процесс
 
 > Результат — черновик WeekPlan с повесткой сессии в `current/`.
 > Структура повестки по шаблону `docs/Session Agenda.md`.
 
-#### 1. Прочитать WeekReport (→ блок «Ревью прошлой недели»)
+#### 1. Прочитать итоги прошлой недели (→ блок «Ревью прошлой недели»)
 
-- Найди `WeekReport W*.md` в `DS-strategy/current/`
+- Найди секцию «Итоги W{N-1}» в текущем `WeekPlan W*.md` в `DS-strategy/current/`
 - Извлеки: completion rate, carry-over, инсайты
 
-> Если WeekReport не найден — сообщить об ошибке и собрать коммиты самостоятельно (fallback).
+> Если секция итогов не найдена — сообщить об ошибке и собрать коммиты самостоятельно (fallback).
 
 #### 2. Обработать inbox (→ блок «Разбор inbox и исчезающих заметок»)
 
 - Прочитай `DS-strategy/inbox/fleeting-notes.md`
 - Прочитай ВСЕ файлы из `DS-strategy/inbox/` (кроме .DS_Store и .docx)
-- Прочитай `DS-strategy/inbox/unsatisfied-questions.md` — **структурированный отчёт** из feedback_triage DB: замечания (✏️) первые, urgent (high/critical) вторые, кластеры проблем третьи. Auto-triage уже выполнен ботом → Session-Prep проверяет кластеры (≥3 = **urgent** → WP-debt) и помечает resolved
+- Прочитай QA-отчёт бота: `DS-agent-workspace/scheduler/feedback-triage/` (последний по дате) — **структурированный отчёт** из feedback_triage DB: замечания (✏️) первые, urgent (high/critical) вторые, кластеры проблем третьи. Auto-triage уже выполнен ботом → Session-Prep проверяет кластеры (≥3 = **urgent** → WP-debt) и помечает resolved
 - Для каждой заметки/файла определи: → в план недели? → capture в Pack? → в повестку для обсуждения? → удалить?
 - **Недельная агрегация Inbox Triage:**
   > Это НЕ дубль ежедневного triage Note-Review. Note-Review классифицирует заметки и пишет предложения в целевые документы. Session-Prep агрегирует результаты за неделю из этих документов + добавляет unsatisfied-questions.
   1. Собери ВСЕ оставшиеся `🔄` заметки (идеи, висящие >7 дней)
   2. Собери все непринятые предложения из прошлых Note-Review (если остались в WeekPlan)
   3. Сформируй блок `📋 Inbox Triage (недельный)` с 3 корзинами:
-     - ✅ Архив: заметки, чьи задачи закрыты за неделю (по WeekReport)
+     - ✅ Архив: заметки, чьи задачи закрыты за неделю (по итогам в WeekPlan)
      - 📌 Предложения в РП: из заметок-задач + из `🔄`, у которых появился scope
      - ❓ На решение: `🔄` без scope, непринятые предложения, спорные
   4. Включи этот блок в WeekPlan (секция повестки)
@@ -74,16 +73,19 @@ DS-strategy/
 
 #### 4. Сверка со стратегией + агрегация MAPSTRATEGIC (→ блок «Стратегическая сверка»)
 
-- Прочитай `DS-strategy/docs/Strategy.md` — фокусы года, Q1 цели, приоритеты месяца
-- Прочитай `/Users/elenadolgova/IWE/*/MAPSTRATEGIC.md` (если файл есть в репо)
+- Прочитай `DS-strategy/docs/Strategy.md` — фокусы года, Q-цели, результаты месяца
+- Прочитай `{{WORKSPACE_DIR}}/*/MAPSTRATEGIC.md` (если файл есть в репо)
 - **Агрегируй** фазы из MAPSTRATEGIC.md → обнови секцию «Текущие фазы (MAPSTRATEGIC)» в Strategy.md
-- Обнови «Приоритеты месяца» — статусы на основе WeekReport
-- Проверь: соответствуют ли текущие РП стратегическому направлению?
-- Отметь расхождения (РП без привязки к стратегии, или стратегия без РП)
+- Обнови ревью-таблицу результатов — статусы R1–RN на основе итогов в WeekPlan
+- **Проверь связность иерархии** (PD.SOTA.001):
+  - Каждый R имеет колонку `→ Q#`? Если нет — предложить привязку или пометить «off-plan»
+  - Каждая Q-цель покрыта хотя бы одним R? Если нет — отметить в повестке
+  - Есть ли РП ≥3h без привязки к R? Если да — поднять вопрос на сессии
+- Отметь ТОС-месяца: какой constraint блокирует наибольшее количество R?
 
 #### 5. Обход WORKPLAN.md (Hub-and-Spoke)
 
-- Прочитай `/Users/elenadolgova/IWE/*/WORKPLAN.md` из каждого репо
+- Прочитай `{{WORKSPACE_DIR}}/*/WORKPLAN.md` из каждого репо
 - Собери все РП со статусом pending/in-progress
 - Выяви расхождения с HUB-планом
 
@@ -99,26 +101,6 @@ DS-strategy/
 - Собери мероприятия, итоги, fleeting notes, готовые черновики → 5-10 постов
 - Результат включи в черновик WeekPlan как секцию `## Контент-план W{N}`
 
-#### 6.7. Проверить трекер здоровья (→ секция «Здоровье» в WeekPlan)
-
-- Прочитай `DS-strategy/docs/health-tracker.md`
-- Просроченные события → добавить в WeekPlan как напоминание (повторять каждую неделю до выполнения)
-- События в ближайшие 30 дней → предупредить
-- Выполненные → отметить пользователю
-
-#### 6.75. Проверить трекер растений (→ секция «Растения» в WeekPlan)
-
-- Прочитай `DS-strategy/docs/plant-care-tracker.md`
-- Текущий месяц → какие задачи по уходу актуальны на этой неделе?
-- Замоченные/на рассаде → проверить статус, напомнить о действиях
-- Добавить актуальные задачи в WeekPlan
-
-#### 6.8. Выбрать приоритетные черновики (→ секция «Черновики → заготовки» в WeekPlan)
-
-- Прочитай `DS-strategy/drafts/draft-list.md` и `DS-strategy/inbox/drafts.md`
-- Предложи 3-5 черновиков для проработки в заготовки на этой неделе
-- Учти стратегические приоритеты (из шагов 3-4) при выборе
-
 #### 7. Сформировать черновик WeekPlan
 
 - Выбери РП из месячных приоритетов + WORKPLAN.md + carry-over + inbox
@@ -132,7 +114,7 @@ DS-strategy/
 
 1. Перемести предыдущий `WeekPlan W*.md` из `current/` в `archive/week-plans/`
 2. Перемести предыдущий `DayPlan *.md` из `current/` в `archive/day-plans/` (если есть)
-3. Перемести предыдущий `WeekReport W*.md` из `current/` в `archive/week-reports/` (если есть; текущий WeekReport — тот, что создан week-review перед session-prep — оставь)
+3. ~~WeekReport~~ — отдельный файл больше не создаётся (deprecated). Итоги — секция в WeekPlan.
 4. Перемести предыдущий `SchedulerReport *.md` из `current/` в `archive/scheduler-reports/` (если есть и не текущий)
 5. **Архивация WP context files (safety net — Close уже архивирует done-файлы):**
    - Для каждого `inbox/WP-*.md` сверь статус с MEMORY.md (source-of-truth)
@@ -140,7 +122,8 @@ DS-strategy/
    - Если фронтматтер WP-файла не совпадает с MEMORY.md → обновить фронтматтер перед перемещением
 6. **Полная очистка inbox/ (еженедельно, единственный владелец — Session-Prep):**
    - `extraction-reports/` — отчёты старше 7 дней → удали (информация уже в Pack)
-   - `captures.md` — записи с `[processed]` старше 14 дней → удали (уже в Pack)
+   - `captures.md` — записи с `[processed ...]` старше 14 дней → **архивируй** в `archive/captures/captures-{period}.md` (НЕ удалять — это аудитный след записи в Pack). Записи с `[rejected ...]` старше 14 дней → архивируй туда же.
+   - Записи **без** метки `[processed]` или `[rejected]` → оставить (ещё не обработаны Экстрактором)
    - Прочие файлы (не fleeting-notes.md, не captures.md, не активные WP-*) → «Ещё нужен?» Нет → удали или `archive/notes/`
 7. Создай `current/WeekPlan W{N} YYYY-MM-DD.md` (Пн текущей недели)
 8. Закоммить в DS-strategy
@@ -159,11 +142,10 @@ agent: Стратег
 
 # WeekPlan W{N}: DD мес — DD мес YYYY
 
----
+<details>
+<summary><b>Итоги прошлой недели W{N-1}</b></summary>
 
-## Итоги прошлой недели W{N-1}
-
-> Источник: WeekReport W{N-1}
+> Источник: секция «Итоги W{N-1}» из предыдущего WeekPlan
 
 **Completion rate:** X/Y РП (N%)
 
@@ -173,11 +155,11 @@ agent: Стратег
 **Ключевые инсайты:**
 - ...
 
-> Полные итоги: см. `WeekReport W{N-1} YYYY-MM-DD.md`
+> Полные итоги: см. секцию «Итоги W{N-1}» в предыдущем WeekPlan (архив)
 
----
-
-## Повестка сессии стратегирования
+</details>
+<details>
+<summary><b>Повестка сессии стратегирования</b></summary>
 
 ### Стандартные пункты
 - [ ] Ревью прошлой недели (см. выше)
@@ -185,9 +167,9 @@ agent: Стратег
 - [ ] НЭП: [закрыть X, обсудить Y]
 - [ ] Стратегическая сверка: [расхождения, фазы]
 
----
-
-## 📋 Inbox Triage (недельный)
+</details>
+<details>
+<summary><b>📋 Inbox Triage (недельный)</b></summary>
 
 > Агрегация заметок за неделю. Источник: fleeting-notes.md + непотреблённые triage-файлы.
 
@@ -208,29 +190,30 @@ agent: Стратег
 ### Вопросы для обсуждения
 1. ...
 
----
+</details>
+<details>
+<summary><b>Приоритеты месяца</b></summary>
 
-## Приоритеты месяца
 [обновлённые приоритеты]
 
----
+</details>
+<details open>
+<summary><b>План на неделю W{N}</b></summary>
 
-## План на неделю W{N}
+| 🚦 | # | РП | h | Статус | → R# | → Q# |
+|----|---|-----|---|--------|------|------|
+| 🔴 | ... | ... | ... | pending | R{N} | Q{N}.{M} |
 
-| # | РП | Бюджет | Статус | Дедлайн | Репо |
-|---|-----|--------|--------|---------|------|
-| ... | ... | ... | pending | ... | ... |
+**Бюджет недели:** ~Nh РП / ~Nh физ / Мультипликатор ~Nx
 
-**Бюджет недели:** ~Nh
+</details>
+<details open>
+<summary><b>План на понедельник</b></summary>
 
----
-
-## План на понедельник
-
-| # | РП | Бюджет | Приоритет |
-|---|-----|--------|-----------|
-| — | **Сессия стратегирования: утвердить план** | 1h | обязательно |
-| ... | ... | ... | ... |
+| 🚦 | # | РП | h | Статус | → R# |
+|----|---|-----|---|--------|------|
+| ⚫ | — | **Сессия стратегирования: утвердить план** | 1.5 | pending | — |
+| ... | ... | ... | ... | ... | ... |
 
 ---
 
@@ -247,7 +230,7 @@ agent: Стратег
 
 > **Правило:** По итогам стратегирования обновлять Strategy.md и все затронутые WORKPLAN.md. Это гарантирует, что данные не устаревают между сессиями.
 
-1. **Strategy.md** — обновить «Приоритеты месяца» (статусы, бюджеты, новые приоритеты)
+1. **Strategy.md** — обновить результаты месяца (статусы, бюджеты), проверить Q→R связи (колонка `→ Q#`), обновить ревью-таблицу
 2. **WORKPLAN.md** — для каждого репо, упомянутого в WeekPlan:
    - Обновить статусы РП (done/in_progress/pending)
    - Добавить новые РП

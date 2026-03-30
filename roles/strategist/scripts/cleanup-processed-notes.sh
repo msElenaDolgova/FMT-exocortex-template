@@ -94,10 +94,36 @@ process_block() {
 "
         KEEP_COUNT=$((KEEP_COUNT + 1))
     else
-        ARCHIVE_BLOCKS="${ARCHIVE_BLOCKS}${block}
+        # Защита: не удалять заметки моложе 24ч (catch-up note-review может снять bold без реальной обработки)
+        local note_date_str
+        note_date_str=$(echo "$block" | grep -oP '(?<=<sub>)\d{1,2}\s+\w{3}' | head -1)
+        local is_fresh=0
+        if [ -n "$note_date_str" ]; then
+            # Простая проверка: если заметка от сегодня или вчера, считаем свежей
+            local note_day note_month
+            note_day=$(echo "$note_date_str" | awk '{print $1}')
+            note_month=$(echo "$note_date_str" | awk '{print $2}')
+            local today_day today_month yesterday_day yesterday_month
+            today_day=$(date +%d | sed 's/^0//')
+            today_month=$(date +%b | tr '[:upper:]' '[:lower:]')
+            yesterday_day=$(date -v-1d +%d 2>/dev/null || date -d yesterday +%d 2>/dev/null | sed 's/^0//')
+            yesterday_month=$(date -v-1d +%b 2>/dev/null || date -d yesterday +%b 2>/dev/null | tr '[:upper:]' '[:lower:]')
+            note_month_lower=$(echo "$note_month" | tr '[:upper:]' '[:lower:]')
+            if [ "$note_day" = "$today_day" ] || [ "$note_day" = "$yesterday_day" ]; then
+                is_fresh=1
+            fi
+        fi
+        if [ "$is_fresh" -eq 1 ]; then
+            KEEP_BLOCKS="${KEEP_BLOCKS}${block}
 ---SEPARATOR---
 "
-        ARCHIVE_COUNT=$((ARCHIVE_COUNT + 1))
+            KEEP_COUNT=$((KEEP_COUNT + 1))
+        else
+            ARCHIVE_BLOCKS="${ARCHIVE_BLOCKS}${block}
+---SEPARATOR---
+"
+            ARCHIVE_COUNT=$((ARCHIVE_COUNT + 1))
+        fi
     fi
 }
 

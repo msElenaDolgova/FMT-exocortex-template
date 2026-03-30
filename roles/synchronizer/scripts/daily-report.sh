@@ -2,7 +2,9 @@
 # daily-report.sh — ежедневный отчёт работы scheduler
 #
 # Формирует отчёт: что должно было сработать, что сработало, что нет.
-# Результат: DS-strategy/current/SchedulerReport YYYY-MM-DD.md
+#
+# Если DS-agent-workspace/ существует → пишет туда (scheduler/reports/).
+# Иначе → DS-strategy/current/ (обратная совместимость).
 #
 # Использование:
 #   daily-report.sh           # сформировать отчёт за сегодня
@@ -12,10 +14,22 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$HOME/.local/state/exocortex"
-LOG_DIR="/Users/elenadolgova/logs/synchronizer"
-STRATEGY_DIR="/Users/elenadolgova/IWE/DS-strategy"
-REPORT_DIR="$STRATEGY_DIR/current"
-ARCHIVE_DIR="$STRATEGY_DIR/archive/scheduler-reports"
+LOG_DIR="{{HOME_DIR}}/logs/synchronizer"
+STRATEGY_DIR="{{WORKSPACE_DIR}}/DS-strategy"
+
+# Agent Workspace: если существует — отчёты идут туда
+AGENT_WORKSPACE="{{WORKSPACE_DIR}}/DS-agent-workspace"
+if [ -d "$AGENT_WORKSPACE/.git" ]; then
+    REPORT_DIR="$AGENT_WORKSPACE/scheduler/reports"
+    ARCHIVE_DIR="$AGENT_WORKSPACE/scheduler/reports/archive"
+    COMMIT_DIR="$AGENT_WORKSPACE"
+    COMMIT_ADD_PATHS=("scheduler/reports/")
+else
+    REPORT_DIR="$STRATEGY_DIR/current"
+    ARCHIVE_DIR="$STRATEGY_DIR/archive/scheduler-reports"
+    COMMIT_DIR="$STRATEGY_DIR"
+    COMMIT_ADD_PATHS=("current/SchedulerReport"*.md "archive/scheduler-reports/")
+fi
 
 DATE=$(date +%Y-%m-%d)
 DOW=$(date +%u)
@@ -27,7 +41,7 @@ DRY_RUN=false
 
 REPORT_FILE="$REPORT_DIR/SchedulerReport $DATE.md"
 SCHEDULER_LOG="$LOG_DIR/scheduler-$DATE.log"
-STRATEGIST_LOG="/Users/elenadolgova/logs/strategist/$DATE.log"
+STRATEGIST_LOG="{{HOME_DIR}}/logs/strategist/$DATE.log"
 
 mkdir -p "$ARCHIVE_DIR"
 
@@ -211,7 +225,7 @@ $warnings
 **Что делать:**
 "
         if echo "$warnings" | grep -q "push failed" 2>/dev/null; then
-            report+="- **push failed:** Mac был оффлайн. Запусти \`cd /Users/elenadolgova/IWE/DS-strategy && git pull --rebase && git push\`
+            report+="- **push failed:** Mac был оффлайн. Запусти \`cd {{WORKSPACE_DIR}}/DS-strategy && git pull --rebase && git push\`
 "
         fi
     else
@@ -230,7 +244,7 @@ archive_old_reports() {
         local basename
         basename=$(basename "$old_report")
         [[ "$basename" == *"$DATE"* ]] && continue
-        mv "$old_report" "$ARCHIVE_DIR/" 2>/dev/null || true
+        git -C "$COMMIT_DIR" mv "$old_report" "$ARCHIVE_DIR/" 2>/dev/null || mv "$old_report" "$ARCHIVE_DIR/"
         log "Archived: $basename"
         count=$((count + 1))
     done
@@ -249,14 +263,15 @@ else
     echo "$REPORT" > "$REPORT_FILE"
     log "Report written: $REPORT_FILE"
 
-    cd "$STRATEGY_DIR"
+    cd "$COMMIT_DIR"
     git pull --rebase --quiet 2>/dev/null || log "WARN: pull --rebase failed (offline?)"
     git reset --quiet 2>/dev/null || true
 
     archive_old_reports
 
-    git add "current/SchedulerReport"*.md 2>/dev/null || true
-    git add "archive/scheduler-reports/" 2>/dev/null || true
+    for p in "${COMMIT_ADD_PATHS[@]}"; do
+        git add "$p" 2>/dev/null || true
+    done
 
     if ! git diff --cached --quiet 2>/dev/null; then
         git commit -m "auto: scheduler report $DATE" --quiet

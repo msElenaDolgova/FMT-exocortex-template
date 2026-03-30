@@ -21,14 +21,10 @@
 
 | Репо | Путь |
 |------|------|
-| LMS Aisystant (READ-ONLY) | `DS-IT-systems/aisystant/` |
-| SystemsSchool_bot (READ-ONLY) | `DS-IT-systems/SystemsSchool_bot/` |
-| Монорепо ИИ-систем (7 шт.) | `DS-IT-systems/DS-ai-systems/` |
-| — Стратег (Grade 3) | `DS-IT-systems/DS-strategist/` |
-| — Шаблонизатор (Grade 0) | `DS-exocortex/setup.sh` (user), `DS-IT-systems/DS-ai-systems/setup/` (author sync) |
-| — Наладчик (Grade 2) | `DS-IT-systems/DS-ai-systems/fixer/` |
-| — Статистик (Grade 1) | `DS-IT-systems/DS-ai-systems/pulse/` |
-| — Оценщик (Grade 2) | `DS-IT-systems/DS-ai-systems/evaluator/` |
+<!-- Добавьте свои DS-репо. Пример: -->
+<!-- | Мой бот (READ-ONLY) | `your-org/your-bot/` | -->
+<!-- | Монорепо ИИ-систем | `your-org/ai-systems/` | -->
+| Шаблонизатор | `FMT-exocortex-template/setup.sh` |
 | Личная онтология | `DS-strategy/ontology.md` |
 | Программа обучения | `DS-principles-curriculum/` |
 
@@ -36,8 +32,9 @@
 
 | Pack | Путь |
 |------|------|
-| PACK-education | Методика обучения |
 | PACK-personal | Личностное развитие |
+| PACK-verification | Верификация и приёмка (трансдоменный) |
+| PACK-autonomous-agents | Автономные агенты (BC, различения, методы) |
 
 ## Ключевые документы (Pack DP)
 
@@ -56,6 +53,10 @@
 | knowledge-mcp (исходники) | `DS-MCP/knowledge-mcp/src/index.ts` |
 | knowledge-mcp (ingest) | `DS-MCP/knowledge-mcp/scripts/ingest.ts` |
 | guides-mcp (исходники) | `DS-MCP/guides-mcp/src/index.ts` |
+| fsm-mcp (исходники) | `DS-MCP/fsm-mcp/src/index.ts` |
+<!-- | Activity Hub | `your-org/activity-hub/` | -->
+| Автономные агенты (код) | `DS-autonomous-agents/` |
+| Данные агентов (workspace) | `DS-agent-workspace/` |
 
 ## Стратегия
 

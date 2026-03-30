@@ -133,17 +133,19 @@ remaining: M
 | Осталось в inbox | M |
 ```
 
-### Шаг 4: Пометить обработанные captures
+### Шаг 4: Пометить captures как проанализированные
 
-В `DS-strategy/inbox/captures.md` — для каждого обработанного capture добавь метку `[processed YYYY-MM-DD]` к заголовку:
+В `DS-strategy/inbox/captures.md` — для каждого проанализированного capture добавь метку `[analyzed YYYY-MM-DD]` к заголовку:
 
 **Было:** `### Паттерн X`
-**Стало:** `### Паттерн X [processed 2026-02-12]`
+**Стало:** `### Паттерн X [analyzed 2026-02-12]`
+
+> **ВАЖНО:** НЕ ставить `[processed]`! Метка `[processed]` означает «записано в Pack» и ставится ТОЛЬКО в session-close после подтверждённой записи. `[analyzed]` означает «extraction report создан, ожидает применения».
 
 ### Шаг 5: Закоммитить
 
 1. Закоммить extraction report (новый)
-2. Закоммить captures.md (метки processed)
+2. Закоммить captures.md (метки analyzed)
 3. Запушить DS-strategy
 
 **Сообщение коммита:** `inbox-check: N captures → extraction report {date}`
@@ -151,7 +153,7 @@ remaining: M
 ## Что НЕ делать
 
 - **НЕ записывай в Pack** — только генерируй отчёт. Запись = только в интерактивной сессии после одобрения
-- Не удаляй captures из captures.md — только помечай [processed]
+- **НЕ ставь `[processed]`** — только `[analyzed]`. `[processed]` = записано в Pack (ставит session-close)
 - Не создавай файлы без frontmatter
 - Не экстрагируй governance-контент
 - Не предлагай кандидаты, похожие на паттерны из feedback-log.md

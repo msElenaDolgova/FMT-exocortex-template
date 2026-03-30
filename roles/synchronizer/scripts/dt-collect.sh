@@ -1,8 +1,14 @@
 #!/bin/bash
-# dt-collect.sh — сбор данных активности для ЦД (WP-106)
+# dt-collect.sh — сбор данных активности для ЦД (WP-106, WP-139)
 #
-# Собирает: WakaTime + git stats + Claude Code sessions + WP stats
-# Записывает в digital_twins.data JSONB (Neon) через dt-collect-neon.py
+# Архитектура: ядро (L3, шаблон) + плагины (L4, personal)
+#   Ядро: WakaTime, git, sessions, WP, health, multiplier, registry, Pack, notes, scheduler reports
+#   Плагины: collectors.d/*.sh — персональные коллекторы (Scout, QA бота, публикации и др.)
+#
+# Плагин = bash-файл с функцией collect_NAME() → stdout JSON + комментарий TARGET
+#   # COLLECTOR: name
+#   # TARGET: 2_7_iwe | 2_8_ecosystem | 2_9_knowledge
+#   collect_name() { echo '{"key": "value"}' }
 #
 # Использование:
 #   dt-collect.sh           # собрать и записать
@@ -16,7 +22,7 @@
 
 set -euo pipefail
 
-# Cross-platform date offset: portable_date_offset <days_back> <format>
+# Cross-platform date offset (macOS + Linux)
 portable_date_offset() {
     local days="$1"
     local fmt="${2:-%Y-%m-%d}"
@@ -24,7 +30,8 @@ portable_date_offset() {
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-WORKSPACE="/Users/elenadolgova/IWE"
+WORKSPACE="$HOME/IWE"
+GOVERNANCE_DIR="${GOVERNANCE_DIR:-$WORKSPACE/DS-my-strategy}"
 LOG_DIR="$HOME/logs/synchronizer"
 DATE=$(date +%Y-%m-%d)
 LOG_FILE="$LOG_DIR/dt-collect-$DATE.log"
@@ -135,7 +142,7 @@ print(json.dumps(result))
 }
 
 # ============================================================
-# 2. Git Stats (все репо в /Users/elenadolgova/IWE/)
+# 2. Git Stats (все репо в ~/IWE/)
 # ============================================================
 
 collect_git() {
@@ -143,7 +150,7 @@ collect_git() {
 import subprocess, json, os
 from datetime import datetime, timedelta
 
-workspace = os.path.expanduser('/Users/elenadolgova/IWE')
+workspace = os.path.expanduser('~/IWE')
 repos = []
 for name in sorted(os.listdir(workspace)):
     path = os.path.join(workspace, name)
@@ -223,7 +230,7 @@ print(json.dumps(result))
 # ============================================================
 
 collect_sessions() {
-    local SESSION_LOG="$WORKSPACE/DS-strategy/inbox/open-sessions.log"
+    local SESSION_LOG="$WORKSPACE/DS-agent-workspace/scheduler/open-sessions.log"
 
     python3 -c "
 import json, os, re
@@ -254,7 +261,7 @@ if os.path.exists(log_path):
 
 # Also count from git log (more reliable — sessions leave commits)
 import subprocess
-workspace = os.path.expanduser('/Users/elenadolgova/IWE')
+workspace = os.path.expanduser('~/IWE')
 git_sessions_7d = 0
 for name in os.listdir(workspace):
     path = os.path.join(workspace, name)
@@ -366,6 +373,381 @@ print(json.dumps(result))
 }
 
 # ============================================================
+# 6. Multiplier & Budgets (from DayPlan)
+# ============================================================
+
+collect_multiplier() {
+    local DAYPLAN_DIR="$GOVERNANCE_DIR/current"
+    local ARCHIVE_DIR="$GOVERNANCE_DIR/archive/day-plans"
+
+    python3 -c "
+import json, os, re, glob
+from datetime import datetime, timedelta
+
+today = datetime.now().strftime('%Y-%m-%d')
+dayplan_dir = '$DAYPLAN_DIR'
+archive_dir = '$ARCHIVE_DIR'
+
+def parse_hours(s):
+    \"\"\"Parse budget string to hours: '2-3h' -> 2.5, '30 мин' -> 0.5, '75 мин' -> 1.25, '1h' -> 1.0\"\"\"
+    s = s.replace('~~', '').strip()
+    if not s or s in ('—', '-', 'незаплан.', 'незапл.'):
+        return 0.0
+    m = re.match(r'(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*h', s, re.I)
+    if m:
+        return (float(m.group(1)) + float(m.group(2))) / 2
+    m = re.match(r'(\d+(?:\.\d+)?)\s*h', s, re.I)
+    if m:
+        return float(m.group(1))
+    m = re.match(r'(\d+)\s*мин', s, re.I)
+    if m:
+        return float(m.group(1)) / 60
+    return 0.0
+
+def parse_dayplan_budget(filepath):
+    \"\"\"Parse done-WP budgets from a DayPlan file. Returns total hours.\"\"\"
+    if not filepath or not os.path.exists(filepath):
+        return 0.0
+    with open(filepath) as f:
+        lines = f.readlines()
+
+    total = 0.0
+    in_table = False
+    header_cols = []
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped.startswith('|'):
+            if in_table and stripped == '':
+                in_table = False
+            continue
+
+        cells = [c.strip() for c in stripped.split('|')]
+        if cells and cells[0] == '':
+            cells = cells[1:]
+        if cells and cells[-1] == '':
+            cells = cells[:-1]
+        if not cells:
+            continue
+
+        # Detect header row — only parse tables with budget column (h or Бюджет)
+        if 'РП' in stripped and 'Статус' in stripped:
+            has_budget_col = any(c in ('h', 'Бюджет') for c in cells)
+            in_table = has_budget_col
+            header_cols = cells if has_budget_col else []
+            continue
+
+        if all(c.replace('-', '').replace(':', '').strip() == '' for c in cells):
+            continue
+        if not in_table:
+            continue
+
+        # Match done variants: ~~done~~, ~~done (Ф0)~~, | done |
+        low = stripped.lower()
+        is_done = bool(re.search(r'~~done[\s(]', low) or '~~done~~' in low or re.search(r'\|\s*done\s*[\|(]', low))
+        if not is_done:
+            continue
+
+        budget_str = ''
+        if len(header_cols) >= 4:
+            if header_cols[0] in ('\U0001f6a6', ''):
+                budget_str = cells[3] if len(cells) > 3 else ''
+            elif len(header_cols) > 2 and 'Бюджет' in header_cols[2]:
+                budget_str = cells[2] if len(cells) > 2 else ''
+            else:
+                for i, h in enumerate(header_cols):
+                    if h in ('h', 'Бюджет'):
+                        budget_str = cells[i] if len(cells) > i else ''
+                        break
+
+        total += parse_hours(budget_str)
+    return total
+
+def find_dayplan(date_str):
+    \"\"\"Find DayPlan file for a given date in current/ or archive/.\"\"\"
+    for d in [dayplan_dir, archive_dir]:
+        pattern = os.path.join(d, f'DayPlan {date_str}*')
+        matches = glob.glob(pattern)
+        if matches:
+            return matches[0]
+    return None
+
+# Daily budget
+daily_budget = parse_dayplan_budget(find_dayplan(today))
+
+# Weekly budget: sum all DayPlans from Monday to today
+now = datetime.now()
+monday = now - timedelta(days=now.weekday())  # Monday of current week
+weekly_budget = 0.0
+d = monday
+while d <= now:
+    ds = d.strftime('%Y-%m-%d')
+    dp = find_dayplan(ds)
+    if dp:
+        weekly_budget += parse_dayplan_budget(dp)
+    d += timedelta(days=1)
+
+result = {
+    'daily_budget_closed': round(daily_budget, 1),
+    'weekly_budget_closed': round(weekly_budget, 1),
+}
+print(json.dumps(result))
+" 2>/dev/null || echo "{}"
+}
+
+# ============================================================
+# 7. WP-REGISTRY (full stats from source-of-truth)
+# ============================================================
+
+collect_registry() {
+    local REGISTRY="$GOVERNANCE_DIR/docs/WP-REGISTRY.md"
+
+    python3 -c "
+import json, os, re
+from datetime import datetime
+
+registry = '$REGISTRY'
+if not os.path.exists(registry):
+    print(json.dumps({}))
+    exit(0)
+
+with open(registry) as f:
+    content = f.read()
+
+done = len(re.findall(r'\| ✅', content))
+in_progress = len(re.findall(r'\| 🔄', content))
+pending = len(re.findall(r'\| ⏳', content))
+archived = len(re.findall(r'\| 📦', content))
+merged = len(re.findall(r'\| ↗️', content))
+
+result = {
+    'registry_total': done + in_progress + pending + archived + merged,
+    'registry_done': done,
+    'registry_in_progress': in_progress,
+    'registry_pending': pending,
+    'registry_archived': archived,
+    'registry_merged': merged,
+}
+print(json.dumps(result))
+" 2>/dev/null || echo "{}"
+}
+
+# ============================================================
+# 8. Pack Entities (knowledge corpus size)
+# ============================================================
+
+collect_pack() {
+    python3 -c "
+import json, os, re
+
+workspace = os.path.expanduser('~/IWE')
+pack_stats = {}
+total_md = 0
+total_entities = 0
+
+for name in sorted(os.listdir(workspace)):
+    if not name.startswith('PACK-'):
+        continue
+    path = os.path.join(workspace, name)
+    if not os.path.isdir(path):
+        continue
+    md_count = 0
+    entity_ids = set()
+    for root, dirs, files in os.walk(path):
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        for f in files:
+            if f.endswith('.md'):
+                md_count += 1
+                # Extract entity IDs like DP.ARCH.001, AS.D.007, PD.FORM.004
+                m = re.match(r'^([A-Z]{2,4}\.[A-Z]+\.\d{3})', f)
+                if m:
+                    entity_ids.add(m.group(1))
+    pack_stats[name] = {'md_files': md_count, 'entities': len(entity_ids)}
+    total_md += md_count
+    total_entities += len(entity_ids)
+
+result = {
+    'pack_total_md': total_md,
+    'pack_total_entities': total_entities,
+    'pack_repos': pack_stats,
+}
+print(json.dumps(result))
+" 2>/dev/null || echo "{}"
+}
+
+# ============================================================
+# 9. Fleeting Notes (inbox velocity)
+# ============================================================
+
+collect_notes() {
+    local NOTES="$GOVERNANCE_DIR/inbox/fleeting-notes.md"
+
+    python3 -c "
+import json, os, re
+
+notes_path = '$NOTES'
+if not os.path.exists(notes_path):
+    print(json.dumps({}))
+    exit(0)
+
+with open(notes_path) as f:
+    lines = f.readlines()
+
+new = 0      # **bold** without 🔄
+review = 0   # **bold** with 🔄
+processed = 0
+noise = 0
+total = 0
+
+in_content = False
+for line in lines:
+    s = line.strip()
+    if s == '---':
+        in_content = not in_content
+        continue
+    if not in_content:
+        continue
+    if not s or s.startswith('>') or s.startswith('#'):
+        continue
+    # Count substantive lines (notes start with - or are list items)
+    if s.startswith('- ') or s.startswith('* '):
+        total += 1
+        if '~~' in s:
+            noise += 1
+        elif s.startswith('- **') or s.startswith('* **'):
+            if '🔄' in s:
+                review += 1
+            else:
+                new += 1
+        else:
+            processed += 1
+
+result = {
+    'notes_total': total,
+    'notes_new': new,
+    'notes_review': review,
+    'notes_processed': processed,
+    'notes_noise': noise,
+}
+print(json.dumps(result))
+" 2>/dev/null || echo "{}"
+}
+
+# ============================================================
+# 11. Scheduler Reports (task success rate)
+# ============================================================
+
+collect_scheduler_reports() {
+    local REPORTS_DIR="$WORKSPACE/DS-agent-workspace/scheduler/scheduler-reports"
+
+    python3 -c "
+import json, os, re, glob
+from datetime import datetime, timedelta
+
+reports_dir = '$REPORTS_DIR'
+now = datetime.now()
+
+if not os.path.isdir(reports_dir):
+    print(json.dumps({}))
+    exit(0)
+
+# Count reports and parse latest
+reports = sorted(glob.glob(os.path.join(reports_dir, 'SchedulerReport *.md')))
+total_reports = len(reports)
+
+# Parse last 7 days
+green_days = 0
+yellow_days = 0
+red_days = 0
+streak = 0  # consecutive green days from today backwards
+
+streak_broken = False
+for days_back in range(7):
+    d = now - timedelta(days=days_back)
+    ds = d.strftime('%Y-%m-%d')
+    pattern = os.path.join(reports_dir, f'SchedulerReport {ds}*')
+    matches = glob.glob(pattern)
+    if not matches:
+        if not streak_broken:
+            streak_broken = True  # gap breaks streak
+        continue  # skip missing days, keep counting 7d stats
+    with open(matches[0], errors='replace') as f:
+        content = f.read(500)
+    if '🟢' in content and '🔴' not in content:
+        green_days += 1
+        if not streak_broken:
+            streak += 1
+    elif '🔴' in content:
+        red_days += 1
+        streak_broken = True
+    else:
+        yellow_days += 1
+        streak_broken = True
+
+result = {
+    'scheduler_reports_total': total_reports,
+    'scheduler_green_7d': green_days,
+    'scheduler_yellow_7d': yellow_days,
+    'scheduler_red_7d': red_days,
+    'scheduler_green_streak': streak,
+}
+print(json.dumps(result))
+" 2>/dev/null || echo "{}"
+}
+
+# ============================================================
+# Plugin Loader: collectors.d/*.sh (L4 Personal)
+# ============================================================
+# Each plugin defines a collect_NAME() function and has metadata:
+#   # COLLECTOR: name
+#   # TARGET: 2_7_iwe | 2_8_ecosystem | 2_9_knowledge
+#
+# Plugins are sourced (not executed) — they share WORKSPACE, log(), etc.
+# Plugin functions must output valid JSON to stdout.
+# Missing/broken plugins are skipped gracefully.
+
+COLLECTORS_DIR="$SCRIPT_DIR/collectors.d"
+PLUGIN_IWE_JSONS=()
+PLUGIN_ECO_JSONS=()
+PLUGIN_KNOW_JSONS=()
+
+if [ -d "$COLLECTORS_DIR" ]; then
+    for plugin in "$COLLECTORS_DIR"/*.sh; do
+        [ -f "$plugin" ] || continue
+        plugin_name=$(basename "$plugin" .sh)
+
+        # Read target from comment header
+        target=$(grep -m1 '^# TARGET:' "$plugin" | sed 's/^# TARGET:\s*//' | tr -d '[:space:]')
+        collector_func=$(grep -m1 '^# COLLECTOR:' "$plugin" | sed 's/^# COLLECTOR:\s*//' | tr -d '[:space:]')
+
+        if [ -z "$collector_func" ] || [ -z "$target" ]; then
+            log "SKIP plugin $plugin_name — missing COLLECTOR/TARGET header"
+            continue
+        fi
+
+        # Source the plugin (defines collect_NAME function)
+        source "$plugin"
+
+        # Call the collector function
+        log "Collecting plugin: $collector_func..."
+        plugin_json=$(collect_"$collector_func" 2>/dev/null || echo "{}")
+
+        # Route JSON to the right target array
+        case "$target" in
+            2_7_iwe)        PLUGIN_IWE_JSONS+=("$plugin_json") ;;
+            2_8_ecosystem)  PLUGIN_ECO_JSONS+=("$plugin_json") ;;
+            2_9_knowledge)  PLUGIN_KNOW_JSONS+=("$plugin_json") ;;
+            *)              log "WARN plugin $plugin_name — unknown target: $target" ;;
+        esac
+    done
+fi
+
+# Convert arrays to JSON arrays for Python merge
+plugin_iwe_arr=$(printf '%s\n' "${PLUGIN_IWE_JSONS[@]:-}" | python3 -c "import sys,json; parts=[json.loads(l) for l in sys.stdin if l.strip()]; print(json.dumps(parts))" 2>/dev/null || echo "[]")
+plugin_eco_arr=$(printf '%s\n' "${PLUGIN_ECO_JSONS[@]:-}" | python3 -c "import sys,json; parts=[json.loads(l) for l in sys.stdin if l.strip()]; print(json.dumps(parts))" 2>/dev/null || echo "[]")
+plugin_know_arr=$(printf '%s\n' "${PLUGIN_KNOW_JSONS[@]:-}" | python3 -c "import sys,json; parts=[json.loads(l) for l in sys.stdin if l.strip()]; print(json.dumps(parts))" 2>/dev/null || echo "[]")
+
+# ============================================================
 # Merge & Write
 # ============================================================
 
@@ -379,8 +761,18 @@ log "Collecting WP stats..."
 WP_JSON=$(collect_wp)
 log "Collecting scheduler health..."
 HEALTH_JSON=$(collect_health)
+log "Collecting multiplier data..."
+MULT_JSON=$(collect_multiplier)
+log "Collecting registry stats..."
+REGISTRY_JSON=$(collect_registry)
+log "Collecting Pack metrics..."
+PACK_JSON=$(collect_pack)
+log "Collecting fleeting notes..."
+NOTES_JSON=$(collect_notes)
+log "Collecting scheduler reports..."
+SCHED_JSON=$(collect_scheduler_reports)
 
-# Merge all into 2_6_coding + 2_7_iwe
+# Merge all: core (L3) + plugins (L4)
 MERGED=$(python3 -c "
 import json, sys
 
@@ -389,11 +781,54 @@ git = json.loads('''$GIT_JSON''')
 sessions = json.loads('''$SESSIONS_JSON''')
 wp = json.loads('''$WP_JSON''')
 health = json.loads('''$HEALTH_JSON''')
+mult = json.loads('''$MULT_JSON''')
+registry = json.loads('''$REGISTRY_JSON''')
+pack = json.loads('''$PACK_JSON''')
+notes = json.loads('''$NOTES_JSON''')
+sched = json.loads('''$SCHED_JSON''')
+
+# Plugin data (arrays of dicts)
+p_iwe = json.loads('''$plugin_iwe_arr''')
+p_eco = json.loads('''$plugin_eco_arr''')
+p_know = json.loads('''$plugin_know_arr''')
+
+# 2_7_iwe: core + plugins
+iwe = {**git, **sessions, **wp, **health, **mult, **registry, **sched}
+for p in p_iwe:
+    iwe.update(p)
+
+# Daily multiplier
+waka_today = waka.get('coding_seconds_today', 0)
+budget_today = mult.get('daily_budget_closed', 0)
+if waka_today > 0 and budget_today > 0:
+    iwe['daily_multiplier'] = round(budget_today / (waka_today / 3600), 2)
+
+# Weekly multiplier
+waka_7d = waka.get('coding_seconds_7d', 0)
+budget_week = mult.get('weekly_budget_closed', 0)
+if waka_7d > 0 and budget_week > 0:
+    iwe['weekly_multiplier'] = round(budget_week / (waka_7d / 3600), 2)
+
+# 2_8_ecosystem: plugins only (QA, publications, etc.)
+ecosystem = {}
+for p in p_eco:
+    ecosystem.update(p)
+
+# 2_9_knowledge: core (Pack, notes) + plugins (Scout, etc.)
+knowledge = {**pack, **notes}
+for p in p_know:
+    knowledge.update(p)
 
 result = {
     '2_6_coding': waka,
-    '2_7_iwe': {**git, **sessions, **wp, **health},
+    '2_7_iwe': iwe,
 }
+# Only include sections with data
+if ecosystem:
+    result['2_8_ecosystem'] = ecosystem
+if knowledge:
+    result['2_9_knowledge'] = knowledge
+
 print(json.dumps(result, indent=2, ensure_ascii=False))
 " 2>/dev/null)
 

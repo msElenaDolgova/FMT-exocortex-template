@@ -4,13 +4,39 @@
 
 set -e
 
+# Предотвращаем сон: -i (idle, работает на батарее) -d (display) -u (user activity)
+# Флаг -s (system sleep) не используем — он НЕ работает на батарее (OBC может переключить профиль)
+caffeinate -diu -w $$ &
+
 # Конфигурация
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-WORKSPACE="/Users/elenadolgova/IWE/DS-strategy"
+WORKSPACE="$HOME/IWE/DS-strategy"
 PROMPTS_DIR="$REPO_DIR/prompts"
 LOG_DIR="$HOME/logs/strategist"
-CLAUDE_PATH="/opt/homebrew/bin/claude"
+CLAUDE_PATH="{{CLAUDE_PATH}}"
+CLAUDE_TIMEOUT=1800  # 30 мин — защита от зависания Claude CLI
+
+# macOS не имеет GNU timeout — используем perl fallback
+if ! command -v timeout &>/dev/null; then
+    timeout() {
+        local duration="$1"; shift
+        perl -e '
+            use POSIX ":sys_wait_h";
+            my $timeout = shift @ARGV;
+            my $pid = fork();
+            if ($pid == 0) { exec @ARGV; die "exec failed: $!"; }
+            eval {
+                local $SIG{ALRM} = sub { kill "TERM", $pid; die "timeout\n"; };
+                alarm $timeout;
+                waitpid($pid, 0);
+                alarm 0;
+            };
+            if ($@ && $@ eq "timeout\n") { waitpid($pid, WNOHANG); exit 124; }
+            exit ($? >> 8);
+        ' "$duration" "$@"
+    }
+fi
 
 # Создаём папку для логов
 mkdir -p "$LOG_DIR"
@@ -35,7 +61,7 @@ notify() {
 
 notify_telegram() {
     local scenario="$1"
-    "$(dirname "$(dirname "$SCRIPT_DIR")")/synchronizer/scripts/notify.sh" strategist "$scenario" >> "$LOG_FILE" 2>&1 || true
+    "$HOME/IWE/DS-IT-systems/DS-ai-systems/synchronizer/scripts/notify.sh" strategist "$scenario" >> "$LOG_FILE" 2>&1 || true
 }
 
 run_claude() {
@@ -60,7 +86,7 @@ months = ['января','февраля','марта','апреля','мая','
 d = datetime.date.today()
 print(f'{d.day} {months[d.month-1]} {d.year}, {days[d.weekday()]}')
 ")
-    prompt="[Системный контекст] Сегодня: ${ru_date_context}. ISO: ${DATE}. День недели №${DAY_OF_WEEK} (1=Пн..7=Вс).
+    prompt="[Системный контекст] Сегодня: ${ru_date_context}. ISO: ${DATE}. День недели №${DAY_OF_WEEK} (1=Пн..7=Вс). ЯЗЫК: отвечай ТОЛЬКО на русском. Украинский, английский и другие языки запрещены.
 
 ${prompt}"
 
@@ -70,11 +96,18 @@ ${prompt}"
 
     cd "$WORKSPACE"
 
-    # Запуск Claude Code с содержимым команды как промпт
-    "$CLAUDE_PATH" --dangerously-skip-permissions \
+    # Запуск Claude Code с содержимым команды как промпт (с timeout-защитой)
+    local rc=0
+    timeout "$CLAUDE_TIMEOUT" "$CLAUDE_PATH" --dangerously-skip-permissions \
         --allowedTools "Read,Write,Edit,Glob,Grep,Bash" \
         -p "$prompt" \
-        >> "$LOG_FILE" 2>&1
+        >> "$LOG_FILE" 2>&1 || rc=$?
+
+    if [ $rc -eq 124 ]; then
+        log "WARN: Claude CLI timed out after ${CLAUDE_TIMEOUT}s for scenario: $command_file"
+    elif [ $rc -ne 0 ]; then
+        log "WARN: Claude CLI exited with code $rc for scenario: $command_file"
+    fi
 
     log "Completed scenario: $command_file"
 
@@ -104,18 +137,27 @@ already_ran_today() {
 }
 
 # File-based lock to prevent concurrent execution (RunAtLoad + CalendarInterval race)
+# mkdir — атомарная операция на POSIX, исключает TOCTOU race condition
 LOCK_DIR="$LOG_DIR/locks"
 mkdir -p "$LOCK_DIR"
 
 acquire_lock() {
     local scenario="$1"
-    local lockfile="$LOCK_DIR/${scenario}.${DATE}.lock"
-    if ! mkdir "$lockfile" 2>/dev/null; then
-        log "SKIP: $scenario already running (lock exists: $lockfile)"
-        exit 2  # non-zero → scheduler won't mark_done
+    local lockdir="$LOCK_DIR/${scenario}.${DATE}.lck"
+    if ! mkdir "$lockdir" 2>/dev/null; then
+        local pid
+        pid=$(cat "$lockdir/pid" 2>/dev/null)
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            log "SKIP: $scenario already running (PID $pid)"
+            exit 2  # non-zero → scheduler won't mark_done
+        else
+            log "WARN: removing stale lock (PID $pid no longer exists): $lockdir"
+            rm -rf "$lockdir"
+            mkdir "$lockdir" || { log "ERROR: failed to acquire lock for $scenario"; exit 1; }
+        fi
     fi
-    # Auto-cleanup lock on ANY exit (including set -e failures in run_claude)
-    trap "rmdir '$lockfile' 2>/dev/null; trap - EXIT" EXIT INT TERM
+    echo $$ > "$lockdir/pid" || { rm -rf "$lockdir"; log "ERROR: failed to write PID for $scenario"; exit 1; }
+    trap "rm -rf \"$lockdir\" 2>/dev/null" EXIT
 }
 
 # Читаем strategy_day из конфига (L4 Personal)
@@ -174,7 +216,7 @@ case "$1" in
         log "Sunday: running week review"
         run_claude "week-review"
         # Fallback push for Knowledge Index (week-review creates a post there)
-        KI_REPO="/Users/elenadolgova/IWE/DS-Knowledge-Index"
+        KI_REPO="$HOME/IWE/DS-Knowledge-Index"
         if git -C "$KI_REPO" log --oneline -1 --since="1 hour ago" --grep="week-review" 2>/dev/null | grep -q .; then
             git -C "$KI_REPO" push >> "$LOG_FILE" 2>&1 && log "Pushed Knowledge Index (fallback)" || log "WARN: KI push failed"
         fi
@@ -213,7 +255,7 @@ case "$1" in
 
         # Deterministic cleanup: archive non-bold, non-🔄 notes (safety net for LLM Step 10)
         log "Running deterministic cleanup..."
-        CLEANUP_OUTPUT=$(bash "$SCRIPT_DIR/cleanup-processed-notes.sh" 2>&1) || true
+        CLEANUP_OUTPUT=$(python3 "$SCRIPT_DIR/cleanup-processed-notes.py" 2>&1) || true
         log "Cleanup: $CLEANUP_OUTPUT"
 
         # If cleanup made changes, commit and push
@@ -241,16 +283,6 @@ case "$1" in
 
         notify_telegram "note-review"
         ;;
-    "baby-rhythm-review")
-        acquire_lock "baby-rhythm-review"
-        if already_ran_today "baby-rhythm-review"; then
-            log "SKIP: baby-rhythm-review already completed today"
-            exit 0
-        fi
-        log "Tuesday: running baby rhythm review"
-        run_claude "baby-rhythm-review"
-        notify_telegram "baby-rhythm-review"
-        ;;
     "day-close")
         log "Manual: running day close"
         run_claude "day-close"
@@ -261,7 +293,7 @@ case "$1" in
         run_claude "strategy-session"
         ;;
     *)
-        echo "Usage: $0 {morning|note-review|week-review|session-prep|strategy-session|day-plan|day-close|baby-rhythm-review}"
+        echo "Usage: $0 {morning|note-review|week-review|session-prep|strategy-session|day-plan|day-close}"
         echo ""
         echo "Scenarios:"
         echo "  morning           - 4:00 EET daily (session-prep on Mon, day-plan others)"
