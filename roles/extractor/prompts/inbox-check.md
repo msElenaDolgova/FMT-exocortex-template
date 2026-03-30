@@ -22,8 +22,8 @@
 
 ### Шаг 0: Прочитать конфигурацию
 
-1. Прочитай `/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/config/routing.md` — таблицы маршрутизации.
-2. Прочитай `/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов. Если capture похож на ранее отклонённый → пропусти.
+1. Прочитай `/Users/elenadolgova/IWE/DS-exocortex/roles/extractor/config/routing.md` — таблицы маршрутизации.
+2. Прочитай `/Users/elenadolgova/IWE/DS-exocortex/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов. Если capture похож на ранее отклонённый → пропусти.
 
 ### Шаг 1: Проверить inbox
 

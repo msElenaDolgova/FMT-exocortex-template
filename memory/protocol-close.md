@@ -388,7 +388,7 @@ done
 #### 3b. Staging-канал (промоция в шаблон)
 
 Открыть `DS-ecosystem-development/C.IT-Platform/C2.IT-Platform/C2.3.Operations/IWE-staging.md`:
-- Есть строки со статусом `validated`? → выполнить чеклист промоции (убрать авторские константы → FMT-exocortex-template → commit `feat: promote S-NN`)
+- Есть строки со статусом `validated`? → выполнить чеклист промоции (убрать авторские константы → DS-exocortex → commit `feat: promote S-NN`)
 - Нет `validated` → просмотреть `testing`: критерий выполнен? → сменить статус на `validated` (промоция на следующей неделе)
 - Добавить новые кандидаты если появились за неделю
 

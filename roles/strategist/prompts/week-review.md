@@ -156,7 +156,7 @@ content_plan: null
 3. Добавь строку:
 
 ```markdown
-**Пост итогов W{N-1}:** [название](https://github.com/{{GITHUB_USER}}/DS-Knowledge-Index/blob/main/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N-1}.md) — status: ready → авто-публикация Пн 07:14
+**Пост итогов W{N-1}:** [название](https://github.com/msElenaDolgova/DS-Knowledge-Index/blob/main/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N-1}.md) — status: ready → авто-публикация Пн 07:14
 ```
 
 4. Закоммить вместе с остальными изменениями

@@ -7,7 +7,7 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/elenadolgova/IWE/FMT-exocortex-template/roles/synchronizer/scripts/scheduler.sh</string>
+        <string>/Users/elenadolgova/IWE/DS-exocortex/roles/synchronizer/scripts/scheduler.sh</string>
         <string>dispatch</string>
     </array>
 
@@ -27,7 +27,7 @@
     <array>
         <dict><key>Hour</key><integer>0</integer><key>Minute</key><integer>0</integer></dict>
         <dict><key>Hour</key><integer>3</integer><key>Minute</key><integer>0</integer></dict>
-        <dict><key>Hour</key><integer>{{TIMEZONE_HOUR}}</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>4</integer><key>Minute</key><integer>0</integer></dict>
         <dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>0</integer></dict>
         <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
         <dict><key>Hour</key><integer>12</integer><key>Minute</key><integer>0</integer></dict>

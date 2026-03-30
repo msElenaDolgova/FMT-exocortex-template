@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to FMT-exocortex-template will be documented in this file.
+All notable changes to DS-exocortex will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
