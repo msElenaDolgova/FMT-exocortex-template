@@ -22,14 +22,14 @@
 
 ### Шаг 0: Прочитать конфигурацию
 
-1. Прочитай `/Users/elenadolgova/IWE/DS-exocortex/roles/extractor/config/routing.md` — таблицы маршрутизации.
-2. Прочитай `/Users/elenadolgova/IWE/DS-exocortex/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов. Если capture похож на ранее отклонённый → пропусти.
+1. Прочитай `/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/config/routing.md` — таблицы маршрутизации.
+2. Прочитай `/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов. Если capture похож на ранее отклонённый → пропусти.
 
 ### Шаг 1: Проверить inbox
 
 1. Прочитай `/Users/elenadolgova/IWE/DS-strategy/inbox/captures.md`
 2. Найди все pending записи (секции `### ...` без метки `[processed]`)
-3. Если pending записей нет → напиши в лог `No pending captures in inbox` и **заверши работу**
+3. Если pending записей нет → сообщение `No pending captures in inbox` выводи через stdout (его поймает `extractor.sh` и запишет в `/Users/elenadolgova/logs/extractor/YYYY-MM-DD.log`). **НЕ создавай отдельный лог-файл** в `DS-strategy/` или где-либо ещё. Заверши работу.
 4. Если pending > 5 → возьми первые 5 (по порядку в файле)
 
 ### Шаг 2: Обработать каждый capture (max 5)

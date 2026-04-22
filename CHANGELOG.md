@@ -1,9 +1,133 @@
 # Changelog
 
-All notable changes to DS-exocortex will be documented in this file.
+All notable changes to FMT-exocortex-template will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
+
+## [0.27.1] — 2026-04-22
+
+### Changed
+- **Rollback S-27 «Здоровье платформы»** — секция содержала авторские сервисы (`@aist_me_bot`, `digital-twin`, `gateway-mcp`, `content-pipeline`, `knowledge-mcp`), не применимые обычному пользователю FMT. Перенесена в авторские `extensions/day-open.after.md`. Files: `memory/templates-dayplan.md`, `.claude/skills/day-open/SKILL.md`, `.claude/hooks/protocol-artifact-validate.sh` — удалена секция + step 5b «Бот QA»; SECTIONS хука урезан с 11 до 6. Источник: косяк промоции S-27 — тест «применимо пустому пользователю?» (см. авторский `memory/feedback_post_promote_sync.md`).
+- **L3 leak cleanup (параметризация через env-vars):** `.claude/hooks/protocol-artifact-validate.sh`, `scripts/day-close.sh`, `roles/strategist/scripts/cleanup-processed-notes.py`, `roles/synchronizer/scripts/dt-collect.sh`, `roles/strategist/prompts/{note-review,session-prep}.md` — хардкод `DS-my-strategy`, `DS-agent-workspace/scheduler/feedback-triage/`, `~/IWE/DS-my-strategy` заменён на `$IWE_WORKSPACE` + `$IWE_GOVERNANCE_REPO` (fallback: `DS-strategy`) и условные `if настроены агенты-сборщики QA`.
+- **`memory/hard-distinctions.md` HD #49:** примеры MCP-именования обобщены (`digital-twin-mcp`, `knowledge-mcp` → `<domain>-mcp`). `memory/checklists.md`: урок «knowledge-mcp stale index» → «MCP-индекс». `memory/navigation.md`: таблица MCP → placeholder'ы. `CLAUDE.md`: удалено правило `engines/tailor` (авторская реализация бота).
+- **`.claude/skills/ke/SKILL.md`, `memory/{repo-type-rules,protocol-open}.md`:** `DS-my-strategy` → `<governance-repo>` (env).
+
+### Added
+- **CI smoke-test** (`.github/workflows/validate-template.yml`): job «Smoke-test protocol hooks on clean user env» — создаёт tmp-окружение с `DS-strategy` + минимальным DayPlan и прогоняет `protocol-artifact-validate.sh`. Падает, если хук блокирует commit на чистом пользователе. Перехватывает L1→L3 утечки, которые пропускает blacklist.
+- **Расширенный blacklist** (два уровня) в `validate-template.yml` + зеркально в локальном `setup/validate-template.sh`: глобальный (запрещено везде: `tserentserenov`, `PACK-MIM`, `aist_bot_newarchitecture`, `DS-Knowledge-Index-Tseren`, `DS-my-strategy`, `engines/tailor`) и protocol-only (запрещено в `.claude/skills|hooks|rules`, `memory`, `CLAUDE.md`, но разрешено в README/docs: `@aist_me_bot`, `digital-twin`, `content-pipeline`, `knowledge-mcp`, `gateway-mcp`, `DS-agent-workspace/scheduler`). Покрытие расширено на `roles/`.
+
+### Fixed
+- CI `validate-template.yml` — зеркалирование exclude-логики локального валидатора для путей (`/Users/...`, `/opt/homebrew`) + shellcheck severity: warning→error (0 pred-existing errors, CI зеленеет).
+
+## [0.27.0] — 2026-04-21
+
+### Added
+- **seed/strategy/docs/Strategy.md** — секция «Состояние месяца — фаза стратегической позиции» (PD.FORM.078: 4 фазы Развитие/Хаос/Потолок/Пивот, диагностика по 5 сигналам, playbook, сигналы перехода) + секция «Калибр личности» (PD.CHR.007, gap-analysis по 3 направлениям: горизонт / bus factor / публичность) + строка-источник «НЭП-триады» перед таблицей R1-R{N}. Strategy Session теперь начинается с явной декларации фазы и playbook-а под неё, а не с произвольного выбора РП. Источник: WP-196 Ф12.1, S-26 promoted.
+- **memory/templates-dayplan.md** (WeekPlan) — блоки «Применённые критерии отбора РП» (PD.METHOD.017 + Time-boxing Shape Up: РП без 50% бюджета к четвергу → пересмотр на следующей сессии) + «ТОС недели + запрос недели» на открытии; секция «## Week Close» с 4 подсекциями (сверка РП↔НЭП, рекомендации изменений в НЭП/Стратегию, carry-over, мультипликатор и метрики) на закрытии. Источник: WP-196 Ф12.1, S-26.
+- **memory/templates-dayplan.md** (DayPlan) — секция «Day Close» с 3 подсекциями (три варианта плана на завтра A/B/C, KE-маршрутизация, сверка с НЭП). Day Close теперь имеет видимую структуру весь день, а не появляется «в момент закрытия». Источник: WP-196 Ф12.1, S-26.
+
+### Changed
+- **memory/templates-dayplan.md, .claude/skills/day-open/SKILL.md, .claude/hooks/protocol-artifact-validate.sh** — секция `Здоровье бота (QA)` переименована в `Здоровье платформы` (семантически strict superset: старая секция стала подзаголовком `### Бот @aist_me_bot (QA)`, добавлены `### Остальные MCP-сервисы` + `### Operational health`). Хук валидатора обновлён в lockstep (список секций + awk range + сообщение ошибки). Привязка: WP-255 (L3/L4 AI Quality для всех MCP) draft + HD «Internal health ≠ Public status page». Источник: WP-196 Ф12.3 partial, S-27 promoted.
+
+## [0.26.4] — 2026-04-18
+
+### Added
+- **.claude/skills/ke/SKILL.md** — блок `## Scope` разграничивает три инструмента знания в IWE: `/ke` (inline capture, R14/R1), `extractor.sh inbox-check` (R2 launchd 3h work hours, создаёт `extraction-reports/*.md` со `status: pending-review`), `/apply-captures` (R15 Валидатор, в разработке). Явно указано что скилл делает и чего НЕ делает. Предотвращает будущий P10-дубликат scope при появлении `/apply-captures`. Источник: WP-247 Ф3.0 — IntegrationGate для скилла разбора extraction-reports.
+
+### Fixed
+- **roles/strategist/prompts/session-prep.md** (шаг 6, очистка `extraction-reports/`) — условие удаления учитывает `status` во frontmatter: удаляются только `applied` / `rejected` / `no-pending` (старше 7 дней). Статусы `pending-review` / `partially-applied` / `deferred` защищены — реализация инварианта «capture не исчезает без решения». Инцидент 17 апр: прежнее правило «старше 7 дней → удалить» удалило 6 pending-review отчётов (6-10 апр) вместе с неразобранными кандидатами. Источник: WP-247 Ф5.
+
+## [0.26.3] — 2026-04-18
+
+### Fixed
+- **docs/LEARNING-PATH.md** (§5.1b Session Open), **roles/synchronizer/scripts/dt-collect.sh** (collect_sessions) — путь к session log приведён к канону `DS-my-strategy/inbox/open-sessions.log` (вариант для FMT: `<governance-repo>/inbox/open-sessions.log`). Ранее устаревший путь `DS-agent-workspace/scheduler/open-sessions.log` оставался в LEARNING-PATH и dt-collect.sh — агенты/скрипты при чтении документации могли промахнуться. Каноничное место ведения — governance-репо пользователя (там же читает CI workflow `cloud-scheduler.yml`), формат остаётся plain text. Источник: WP-248 drift cleanup (ArchGate PASS, отказ от §5.7/YAML из-за совместимости с CI).
+
+## [0.26.2] — 2026-04-17
+
+### Fixed
+- **roles/extractor/prompts/inbox-check.md** — шаг 1.3 «напиши в лог `No pending captures in inbox`» теперь явно запрещает создавать отдельный лог-файл в `DS-strategy/` или где-либо ещё. Сообщение выводится через stdout и попадает в `/Users/elenadolgova/logs/extractor/YYYY-MM-DD.log` (поток extractor.sh). Причина: у автора накопились 3 runtime-артефакта в `inbox/` (хаотичное размещение `inbox-check.log`, `extraction-reports/inbox-check.log`, `.inbox-check-log` — нарушение OwnerIntegrity: knowledge flow vs runtime).
+
+## [0.26.1] — 2026-04-17
+
+### Fixed
+- **update-manifest.json** — синхронизирован с реальным состоянием репо: добавлены пропущенные файлы `scripts/backup-icloud.sh`, `scripts/check-dirty-repos.sh` (0.26.0), `.claude/hooks/protocol-artifact-validate.sh` (0.23.0), `.claude/hooks/protocol-stop-gate.sh` (0.24.0), `docs/QUICK-START.md`. Версия бампнута с 0.23.0 до 0.26.1. Без этого фикса: Day/Week Close у пользователей падал с `No such file or directory` на новые скрипты; хуки `settings.json` ссылались на несуществующие файлы. Источник: issue #5 (Евгений Селиверстов).
+- **generate-manifest.sh** — расширены `EXCLUDE_PATTERNS`/`EXCLUDE_EXACT`: `README.en.md`, `CONTRIBUTING.md`, `LICENSE`, `params.yaml`, `extensions/day-close.after.md`, `extensions/mcp-user.json`. Регенерация манифеста больше не захватывает пользовательское пространство, которое `update.sh` обещает не трогать (см. update.sh §«Не затрагивается»).
+- **extensions/README.md** — уточнена формулировка: `update.sh` не трогает пользовательские файлы (`*.after.md`, `*.before.md`, `*.checks.md`, `mcp-user.json`), но обновляет сам `README.md` как платформенный справочник. Противоречие «никогда не трогает» vs фактического присутствия `extensions/README.md` в manifest устранено.
+
+## [0.26.0] — 2026-04-17
+
+### Added
+- **scripts/backup-icloud.sh** — еженедельный бэкап IWE в iCloud Drive. Архивирует без `.git`/`node_modules`/`.venv`, хранит 4 последних архива с ротацией. macOS only.
+- **scripts/check-dirty-repos.sh** — скан всех IWE репо (включая вложенные) на незакоммиченные изменения и незапушенные коммиты. Используется в Day Close (шаг 7г) и Week Close.
+
+### Changed
+- **week-close/SKILL.md** v1.1.0 — добавлены платформенные шаги: бэкап iCloud и скан грязных репо.
+
+## [0.25.1] — 2026-04-14
+
+### Changed
+- **protocol-close.md** — KE (Knowledge Extraction) добавлен как обязательный шаг 2.5 Quick Close. Знание маршрутизируется в момент сессии (горячий контекст), не откладывается на Day Close. Чеклист Quick Close дополнен строкой KE. Секция Deferred обновлена: KE выведен из отложенных.
+
+## [0.25.0] — 2026-04-13
+
+### Changed
+- **protocol-close.md** — сжат 454→97 строк. Остались: маршрутизация, Quick Close inline, формат «Осталось», чеклист Quick Close. Алгоритмы Day Close и Week Close вынесены в отдельные SKILL.md.
+- **day-open/SKILL.md** — шаблоны DayPlan/WeekPlan/итогов удалены из файла (→ `memory/templates-dayplan.md`). Файл сокращён с ~343 до 127 строк.
+- **update-manifest.json** — добавлены: `day-close/SKILL.md`, `week-close/SKILL.md`, `memory/templates-dayplan.md`.
+- **navigation.md** — добавлены строки для `day-close/SKILL.md`, `week-close/SKILL.md`, `templates-dayplan.md`.
+- **run-protocol/SKILL.md** — добавлена строка: `close` (без уточнения) → `close session` по умолчанию.
+
+### Added
+- **.claude/skills/day-close/SKILL.md** — полный алгоритм Day Close (шаги 0–11) с TodoWrite enforcement. Шаг 0 = «создать список задач прямо сейчас». Главный фикс: агент больше не может пропустить шаги через прямое чтение protocol-close.md.
+- **.claude/skills/week-close/SKILL.md** — полный алгоритм Week Close (шаги 0–9) с TodoWrite enforcement.
+- **memory/templates-dayplan.md** — единый источник шаблонов DayPlan, compact dashboard, WeekPlan, итогов дня. Используется day-open (создание) и day-close (запись итогов).
+
+## [0.24.1] — 2026-04-13
+
+### Fixed
+- **protocol-close.md** — Day Close §3: правило архивации DayPlan (`mv current/DayPlan → archive/day-plans/`) + пункт в чеклист Day Close. Week Close §2: архивация WeekPlan прошлой недели + `git status` перед финальным коммитом (незастейженные deletes).
+
+## [0.24.0] — 2026-04-12
+
+### Added
+- **protocol-stop-gate.sh** — Stop hook: если в сессии был вызов протокольного Skill (day-open|day-close|run-protocol|wp-new), проверяет наличие TodoWrite ≥3 items. Нет → блокирует завершение. `action=warn` (warn-before-block, промоция в block после 2 нед обкатки). Логирует в `.claude/logs/gate_log.jsonl`. Guard `STOP_HOOK_ACTIVE` против infinite loop.
+- **settings.json** — Stop hook: protocol-stop-gate.sh добавлен первым в Stop-массив (до capture-bus)
+- **settings.json** — PostToolUse matcher расширен: `Read` → `Read|Skill`
+
+### Changed
+- **protocol-completion-reminder.sh** — расширен на Skill tool: теперь срабатывает при вызове `day-open|day-close|run-protocol|wp-new` и напоминает создать TodoWrite ДО исполнения
+- **protocol-artifact-validate.sh** — добавлены структурные проверки DayPlan: (1) `<details>` collapsible ≥3 блоков, (2) непустые секции Календарь/QA/Scout, (3) мультипликатор `~N.Nx`, (4) Carry-over цитата при наличии предыдущего DayPlan
+
+## [0.23.1] — 2026-04-09
+
+### Fixed
+- **day-open SKILL.md** — шаблон QA-секции: видео показывает только новые за сегодня (не весь stale-архив), заметки проверяются по git log note-review (не carry-over обработанных)
+
+## [0.23.0] — 2026-04-07
+
+### Added
+- **protocol-artifact-validate.sh** — PreToolUse hook (Bash matcher) блокирует `git commit` если DayPlan невалиден: 11 секций, mandatory check, бюджет в формате. Кодовый enforcement вместо промпт-инструкций
+- **run-protocol SKILL.md** — шаг 1b Extension Loading: автоматическая загрузка `extensions/{protocol}.before/after/checks.md` при исполнении любого протокола. Маршрутизация: протоколы с Skill-файлом читают полный алгоритм
+- **day-open SKILL.md** — шаг 5a2 (видео-сканирование), шаг 7 разбит на 7a-7d (Write → Checks → Commit → Dashboard)
+
+### Changed
+- **day-open/protocol-open/protocol-close** — HTML-комментарии `<!-- EXTENSION POINT -->` заменены на видимый markdown `**EXTENSION POINT:**` — агент их читает и исполняет
+- **wp-gate-reminder.sh** — при Day Open инжектирует extension loading reminder
+- **settings.json** — добавлен PreToolUse Bash matcher для protocol-artifact-validate.sh
+
+### Fixed
+- **settings.json** — убрана лишняя строка `.claude/hooks` из `additionalDirectories` (вызывала открытие файлов хуков как вкладок в Cursor/VS Code на Windows)
+
+## [0.22.0] — 2026-04-06
+
+### Added
+- **verify SKILL.md** — два новых типа верификации: `chain` (data flow check, CoVe stage 3) и `adversarial` (scope & bias check, pre-mortem). Context isolation sub-agent с чеклистами
+- **day-close.sh** — маппинг dir→source из L2 (sources.json) + L4 (sources-personal.json). Раздельные вызовы selective-reindex через SOURCES_CONFIG. Фикс хронического reindex failure с 20 марта
+
+### Changed
+- **verify SKILL.md** — обновлена нумерация шагов (0→4), unified verdict формат, автоопределение chain/adversarial по контексту
+- **update-manifest.json** → v0.22.0
 
 ## [0.21.0] — 2026-03-29
 

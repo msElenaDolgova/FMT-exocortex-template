@@ -14,8 +14,8 @@
 ## Конфигурация
 
 > Перед обработкой прочитай:
-> 1. `/Users/elenadolgova/IWE/DS-exocortex/roles/extractor/config/routing.md` — таблицы маршрутизации
-> 2. `/Users/elenadolgova/IWE/DS-exocortex/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов
+> 1. `/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/config/routing.md` — таблицы маршрутизации
+> 2. `/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов
 
 ## Алгоритм
 
@@ -59,8 +59,8 @@
 
 ### Шаг 6: Проверка противоречий
 
-1. **MCP-поиск:** `knowledge-mcp search("тема кандидата")` → есть ли похожее в базе?
-2. **MCP-документ:** `knowledge-mcp get_document("целевой файл")` → проверить содержимое (если существует)
+1. **MCP-поиск:** `knowledge_search("тема кандидата")` → есть ли похожее в базе?
+2. **MCP-документ:** `knowledge_get_document("целевой файл")` → проверить содержимое (если существует)
 3. Прочитай существующие сущности в целевой директории Pack'а.
 4. Прочитай `01B-distinctions.md` целевого Pack'а.
 5. Прочитай `ontology.md` целевого Pack'а (если существует).

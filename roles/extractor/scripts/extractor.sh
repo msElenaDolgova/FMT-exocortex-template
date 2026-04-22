@@ -47,7 +47,7 @@ notify() {
 
 notify_telegram() {
     local scenario="$1"
-    local notify_script="$WORKSPACE/DS-exocortex/roles/synchronizer/scripts/notify.sh"
+    local notify_script="$WORKSPACE/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh"
     if [ -f "$notify_script" ]; then
         "$notify_script" extractor "$scenario" >> "$LOG_FILE" 2>&1 || true
     fi

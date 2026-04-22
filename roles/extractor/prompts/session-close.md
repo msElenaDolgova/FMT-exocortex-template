@@ -14,8 +14,8 @@
 ## Конфигурация
 
 > Перед обработкой прочитай:
-> 1. `/Users/elenadolgova/IWE/DS-exocortex/roles/extractor/config/routing.md` — таблицы маршрутизации (Pack'и, типы, директории)
-> 2. `/Users/elenadolgova/IWE/DS-exocortex/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов (не предлагай аналогичные)
+> 1. `/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/config/routing.md` — таблицы маршрутизации (Pack'и, типы, директории)
+> 2. `/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов (не предлагай аналогичные)
 
 ## Алгоритм
 
@@ -230,8 +230,8 @@ epistemic_stage: emerging
 
 Для каждого кандидата:
 
-1. **MCP-поиск:** `knowledge-mcp search("тема кандидата")` → есть ли похожее в базе?
-2. **MCP-документ:** `knowledge-mcp get_document("целевой файл")` → проверить содержимое (если файл существует)
+1. **MCP-поиск:** `knowledge_search("тема кандидата")` → есть ли похожее в базе?
+2. **MCP-документ:** `knowledge_get_document("целевой файл")` → проверить содержимое (если файл существует)
 3. **Прочитай** существующие сущности в целевой директории Pack'а.
 4. **Прочитай** `01B-distinctions.md` целевого Pack'а — нет ли конфликта.
 5. **Прочитай** `ontology.md` целевого Pack'а (если существует) — согласованы ли типы и термины.

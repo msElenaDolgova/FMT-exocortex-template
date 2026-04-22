@@ -1,6 +1,8 @@
 # Extensions (пользовательские расширения)
 
-> Эта директория — ваше пространство. `update.sh` **никогда** не трогает файлы здесь.
+> Эта директория — ваше пространство. `update.sh` **никогда** не трогает ваши пользовательские файлы здесь: `*.after.md`, `*.before.md`, `*.checks.md`, `mcp-user.json`.
+>
+> Исключение — этот `README.md`: он обновляется как платформенный справочник (новые hook points, примеры). Пользовательский контент в нём не хранится.
 
 ## Как расширить протокол
 
@@ -113,9 +115,52 @@ cp my-extension-pack/extensions/* ~/IWE/extensions/
 
 Посмотреть все доступные extension points: `/extend`
 
+## Подключение своего MCP (mcp-user.json)
+
+Добавьте свои MCP-серверы в `extensions/mcp-user.json`. При каждом `update.sh` они автоматически мёржатся в `.mcp.json`.
+
+### Namespace соглашение
+
+| Префикс | Кто | Примеры |
+|---------|-----|---------|
+| без префикса | Платформенные (зарезервированы) | `iwe-knowledge` (Gateway, агрегирует knowledge + digital-twin) |
+| `ext-*` | Вендорские | `ext-google-calendar`, `ext-linear`, `ext-slack` |
+| `<ваш префикс>-*` | Ваши MCP | `tseren-notes`, `tseren-obsidian` |
+
+Используйте свой уникальный префикс (например username) — это предотвращает конфликты при обновлениях.
+
+### Пример: добавить свой MCP
+
+Файл `extensions/mcp-user.json`:
+
+```json
+{
+  "mcpServers": {
+    "user-my-notes": {
+      "command": "npx",
+      "args": ["-y", "my-notes-mcp"],
+      "env": {
+        "NOTES_DIR": "/path/to/my/notes"
+      }
+    },
+    "ext-linear": {
+      "command": "npx",
+      "args": ["-y", "@mseep/linear-mcp"],
+      "env": {
+        "LINEAR_API_KEY": "lin_api_..."
+      }
+    }
+  }
+}
+```
+
+После `update.sh` эти серверы появятся в `.mcp.json`. Требуется `jq` (`brew install jq`).
+
+**Важно:** `update.sh` не трогает `extensions/mcp-user.json` — ваши MCP в безопасности при обновлениях.
+
 ## Правила
 
 1. Имена файлов: `<protocol>.<hook>.md` или `<protocol>.<hook>.<suffix>.md`
 2. Содержимое: markdown, будет вставлен как блок в протокол
-3. `update.sh` не трогает `extensions/` — ваши файлы в безопасности
+3. `update.sh` не трогает ваши файлы в `extensions/` (`*.after.md`, `*.before.md`, `*.checks.md`, `mcp-user.json`). Исключение — `extensions/README.md` (платформенный справочник)
 4. Несколько расширений одного hook: загружаются в алфавитном порядке

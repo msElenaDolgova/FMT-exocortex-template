@@ -1,6 +1,10 @@
+---
+valid_from: 2026-04-13
+originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
+---
 # Навигация по репозиториям (Слой 3)
 
-> Claude читает этот файл при поиске конкретного файла/репо. Для поиска знаний → `mcp__claude_ai_knowledge-mcp__search`.
+> Claude читает этот файл при поиске конкретного файла/репо. Для поиска знаний → соответствующий MCP-search tool (зависит от подключённого knowledge-сервера).
 
 ## Ключевые файлы
 
@@ -12,7 +16,10 @@
 | Чеклисты | `memory/checklists.md` |
 | SOTA-практики (18 шт.) | `memory/sota-reference.md` |
 | Протокол Open (WP Gate, Ритуал) | `memory/protocol-open.md` |
-| Протокол Close (чеклист, шаблон) | `memory/protocol-close.md` |
+| Протокол Close (маршрутизация, Quick Close) | `memory/protocol-close.md` |
+| Day Close (полный алгоритм) | `.claude/skills/day-close/SKILL.md` |
+| Week Close (полный алгоритм) | `.claude/skills/week-close/SKILL.md` |
+| Шаблоны DayPlan/WeekPlan | `memory/templates-dayplan.md` |
 | Нулевые принципы + иерархия | `ZP/README.md` |
 | Кодирование сущностей | `SPF/spec/SPF.SPEC.001-entity-coding.md` |
 | Масштабируемость Pack | `SPF/spec/SPF.SPEC.003-pack-scalability.md` |
@@ -50,13 +57,12 @@
 
 | MCP | Путь |
 |-----|------|
-| knowledge-mcp (исходники) | `DS-MCP/knowledge-mcp/src/index.ts` |
-| knowledge-mcp (ingest) | `DS-MCP/knowledge-mcp/scripts/ingest.ts` |
-| guides-mcp (исходники) | `DS-MCP/guides-mcp/src/index.ts` |
-| fsm-mcp (исходники) | `DS-MCP/fsm-mcp/src/index.ts` |
-<!-- | Activity Hub | `your-org/activity-hub/` | -->
-| Автономные агенты (код) | `DS-autonomous-agents/` |
-| Данные агентов (workspace) | `DS-agent-workspace/` |
+<!-- Добавьте свои MCP-серверы. Пример: -->
+<!-- | `<domain>-mcp` (исходники) | `DS-MCP/<domain>-mcp/src/index.ts` | -->
+<!-- | `<domain>-mcp` (ingest)    | `DS-MCP/<domain>-mcp/scripts/ingest.ts` | -->
+<!-- | Activity Hub               | `your-org/activity-hub/` | -->
+<!-- | Автономные агенты (код)    | `DS-autonomous-agents/` | -->
+<!-- | Данные агентов (workspace) | `DS-agent-workspace/` | -->
 
 ## Стратегия
 

@@ -34,7 +34,7 @@ STATE_DIR="$HOME/.local/state/exocortex"
 LOG_DIR="$HOME/logs/synchronizer"
 LOG_FILE="$LOG_DIR/scheduler-$(date +%Y-%m-%d).log"
 
-ROLES_DIR="/Users/elenadolgova/IWE/DS-exocortex/roles"
+ROLES_DIR="/Users/elenadolgova/IWE/FMT-exocortex-template/roles"
 NOTIFY_SH="$SCRIPT_DIR/notify.sh"
 
 # Таймаут на задачи (сек): предотвращает блокировку dispatch зависшей задачей

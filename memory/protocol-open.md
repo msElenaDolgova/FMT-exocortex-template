@@ -1,3 +1,7 @@
+---
+valid_from: 2026-04-07
+originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
+---
 # Протокол Open (ОРЗ-фрактал)
 
 > **Два масштаба:** День и Сессия. Триггер определяет масштаб.
@@ -23,7 +27,8 @@
 **ДО ЛЮБОГО ДЕЙСТВИЯ.**
 
 1. Прочитать MEMORY.md → «РП текущей недели»
-2. Совпадает? → Да: п.3. Нет: СТОП.
+2. Совпадает? → Да: п.3. Нет: шаг 2b.
+2b. Не нашёл в MEMORY.md → grep WP-REGISTRY.md (полный список). Нашёл → п.3. Не нашёл → СТОП.
 
 **ЗАПРЕЩЕНО до проверки:** читать код, исследовать, планировать.
 
@@ -76,11 +81,11 @@
 
 **Шаг 2.** Дождаться согласования.
 
-**Шаг 3.** Определить файлы/репо. Context file (`<governance-repo>/inbox/WP-{N}*.md`, например DS-my-strategy) — прочитать. Иерархия доверия: код → документы → WP context.
+**Шаг 3.** Определить файлы/репо. Context file (`<governance-repo>/inbox/WP-{N}*.md`, governance-репо = `$IWE_GOVERNANCE_REPO`, по умолчанию `DS-strategy`) — прочитать. Иерархия доверия: код → документы → WP context.
 
-**Шаг 4.** Регистрация в `<governance-repo>/inbox/open-sessions.log` (например DS-my-strategy): `YYYY-MM-DD HH:MM | WP-N | модель | описание`. Исключения — не регистрировать.
+**Шаг 4.** Регистрация в `<governance-repo>/inbox/open-sessions.log`: `YYYY-MM-DD HH:MM | WP-N | модель | описание`. Исключения — не регистрировать.
 
-<!-- EXTENSION POINT: загрузить extensions/protocol-open.after.md если существует -->
+**EXTENSION POINT:** Проверить `extensions/protocol-open.after.md`. Если существует → `Read` и выполнить.
 
 > Продолжение работы над тем же РП — повторный Ритуал не нужен.
 
