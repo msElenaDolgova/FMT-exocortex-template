@@ -3,13 +3,13 @@
 
 Выполни сценарий Day Plan для роли Стратег (R1).
 
-Источник сценария: {{WORKSPACE_DIR}}/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/scenarios/scheduled/02-day-plan.md
+Источник сценария: /Users/elenadolgova/IWE/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/scenarios/scheduled/02-day-plan.md
 
 ## Контекст
 
-- **HUB (личные планы):** {{WORKSPACE_DIR}}/DS-strategy/current/
-- **SPOKE (планы репо):** {{WORKSPACE_DIR}}/*/WORKPLAN.md
-- **MEMORY:** ~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/MEMORY.md
+- **HUB (личные планы):** /Users/elenadolgova/IWE/DS-strategy/current/
+- **SPOKE (планы репо):** /Users/elenadolgova/IWE/*/WORKPLAN.md
+- **MEMORY:** ~/.claude/projects/-Users-elenadolgova-IWE/memory/MEMORY.md
 
 ## Именование файлов в current/
 
@@ -30,11 +30,11 @@ DS-strategy/
 **Стратег ОБЯЗАН** собрать коммиты за вчерашний день самостоятельно:
 
 ```bash
-# Для КАЖДОГО репо в {{WORKSPACE_DIR}}/:
-git -C {{WORKSPACE_DIR}}/<repo> log --since="yesterday 00:00" --until="today 00:00" --oneline --no-merges
+# Для КАЖДОГО репо в /Users/elenadolgova/IWE/:
+git -C /Users/elenadolgova/IWE/<repo> log --since="yesterday 00:00" --until="today 00:00" --oneline --no-merges
 ```
 
-- Пройди по ВСЕМ репозиториям в `{{WORKSPACE_DIR}}/`
+- Пройди по ВСЕМ репозиториям в `/Users/elenadolgova/IWE/`
 - Сгруппируй коммиты по репозиториям
 - Сопоставь коммиты с РП из недельного плана
 - Определи статус каждого затронутого РП: done / partial / not started
@@ -90,9 +90,9 @@ git -C {{WORKSPACE_DIR}}/<repo> log --since="yesterday 00:00" --until="today 00:
 
 ```bash
 # Коммиты на pilot, отсутствующие на prod (+ = реально отсутствует, - = уже cherry-picked)
-git -C {{WORKSPACE_DIR}}/DS-IT-systems/aist_pilot_bot cherry -v new-architecture pilot 2>/dev/null | grep '^\+'
+git -C /Users/elenadolgova/IWE/DS-IT-systems/aist_pilot_bot cherry -v new-architecture pilot 2>/dev/null | grep '^\+'
 # Коммиты на prod, отсутствующие на pilot (обратное направление)
-git -C {{WORKSPACE_DIR}}/DS-IT-systems/aist_pilot_bot cherry -v pilot new-architecture 2>/dev/null | grep '^\+'
+git -C /Users/elenadolgova/IWE/DS-IT-systems/aist_pilot_bot cherry -v pilot new-architecture 2>/dev/null | grep '^\+'
 ```
 
 - Если есть коммиты с `+` в любом направлении → добавить в DayPlan секцию с ТОЧНЫМ числом:
