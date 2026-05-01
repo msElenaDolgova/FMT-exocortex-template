@@ -8,15 +8,13 @@
 
 ## 1. Pack-репо по домену
 
-> Добавь свои Pack'и в эту таблицу. Пример:
-
-| Домен | Pack | Префикс | Путь |
+| Домен | Pack | Префикс | Путь к docs/ |
 |-------|------|---------|------|
-| _Твой домен (напр. Machine Learning)_ | _PACK-my-domain_ | _MD_ | _/Users/elenadolgova/IWE/PACK-my-domain/pack/my-domain/_ |
-
-<!-- Удали пример выше и добавь свои Pack'и. Формат:
-| Домен (ключевые слова) | Имя Pack-репо | Короткий префикс (2-3 буквы) | Путь к pack/ директории |
--->
+| Саморазвитие, практики, мышление | Pack-self-development | PSD | /Users/elenadolgova/IWE/Pack-self-development/docs/ |
+| Теплица, растения, почва, микроклимат | Pack-garden | PG | /Users/elenadolgova/IWE/Pack-garden/docs/ |
+| Инвестиции, риски, рынки | Pack-investing | PI | /Users/elenadolgova/IWE/Pack-investing/docs/ |
+| Лидерство, менеджмент, руководство | Pack-leadership | PL | /Users/elenadolgova/IWE/Pack-leadership/docs/ |
+| Программирование, инженерия, архитектура | Pack-SE | PSE | /Users/elenadolgova/IWE/Pack-SE/docs/ |
 
 ## 2. Директории по типу знания
 
