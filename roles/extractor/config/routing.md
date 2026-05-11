@@ -12,9 +12,9 @@
 |-------|------|---------|------|
 | Саморазвитие, практики, мышление | Pack-self-development | PSD | /Users/elenadolgova/IWE/Pack-self-development/docs/ |
 | Теплица, растения, почва, микроклимат | Pack-garden | PG | /Users/elenadolgova/IWE/Pack-garden/docs/ |
-| Инвестиции, риски, рынки | Pack-investing | PI | /Users/elenadolgova/IWE/Pack-investing/docs/ |
+| Инвестиции, риски, рынки | Pack-investment | PI | /Users/elenadolgova/IWE/Pack-investment/docs/ |
 | Лидерство, менеджмент, руководство | Pack-leadership | PL | /Users/elenadolgova/IWE/Pack-leadership/docs/ |
-| Программирование, инженерия, архитектура | Pack-SE | PSE | /Users/elenadolgova/IWE/Pack-SE/docs/ |
+| Программирование, инженерия, архитектура | Pack-software-engineering | PSE | /Users/elenadolgova/IWE/Pack-software-engineering/docs/ |
 
 ## 2. Директории по типу знания
 
