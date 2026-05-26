@@ -1,6 +1,16 @@
 ---
 valid_from: 2026-03-17
 originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
+
+type: protocol
+horizon: warm
+domains: [reference]
+status: active
+owner: user
+schema_version: 1
+
+name: "checklists"
+description: "Операционный файл памяти IWE"
 ---
 # Чеклисты
 
@@ -12,7 +22,6 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 - [ ] Источники указаны
 - [ ] **Pack direct read:** При поиске конкретного знания в Pack — Read наиболее вероятный файл напрямую, не только vector search (индекс может быть stale)
 
-> **Урок:** MCP-индекс может вернуть stale версию документа (без последних разделов), и агент ответит «этого нет в Pack» — хотя оно есть. Причина: vector search без прямого чтения файла. Всегда Read наиболее вероятный файл при поиске конкретного знания.
 
 ## Перед изменением репозитория
 
@@ -26,7 +35,7 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 
 - [ ] `grep -r "Github/<old-path>/"` по ВСЕМ репо — найти ВСЕ внутренние ссылки
 - [ ] Скрипты (.sh): hardcoded пути `$HOME/Github/...`
-- [ ] Промпты (.md): `/Users/elenadolgova/IWE/...` пути к config/routing
+- [ ] Промпты (.md): `{{HOME_DIR}}/IWE/...` пути к config/routing
 - [ ] Конфиги (config.yaml): `script:` поля
 - [ ] LaunchD templates (.plist): `<string>/Users/.../</string>`
 - [ ] Загруженные plist в `~/Library/LaunchAgents/` (отдельно от шаблонов в репо!)

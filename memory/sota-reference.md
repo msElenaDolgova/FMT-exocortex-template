@@ -1,6 +1,16 @@
 ---
 valid_from: 2026-03-14
 originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
+
+type: reference
+horizon: warm
+domains: [reference]
+status: active
+owner: user
+schema_version: 1
+
+name: "sota-reference"
+description: "Операционный файл памяти IWE"
 ---
 # SOTA-практики (операционный справочник)
 
@@ -14,6 +24,12 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 | 1 | **Context Engineering** (DP.SOTA.002) | Write/Select/Compress/Isolate. Каждая строка CLAUDE.md = токен. Удаляй лишнее. |
 | 2 | **DDD Strategic** (DP.SOTA.001) | BC = Pack scope. UL = ontology.md. Context Map = typed `related:`. |
 | 3 | **Coupling Model** (DP.SOTA.011) | Оценивай связи по 3 измерениям: knowledge (сколько А знает о B), distance (насколько далеко), volatility (как часто меняется контракт). |
+
+## Условная (применяй при триггере)
+
+| # | Практика | Триггер | Правило |
+|---|----------|---------|---------|
+| 4 | **Quantum-Like Modeling Lens** (DP.SOTA.020 / FPF C.26*) | Probe-coupled state change, order effects, incompatibility, false composition, cross-context evidence transfer | Сначала исчерпать классический набор. QL-lite активируется только с 5 предохранителями (DP.METHOD.050 §4): responsible / сбой представления / слабый вывод / действие / критерий выхода. Линза = representational, не physical quantum. |
 
 ## Полная таблица: Platform SOTA (Pack DP)
 
@@ -32,6 +48,7 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 | SOTA.011 | Coupling Model (Khononov) | SOTA | Оценка связей: knowledge/distance/volatility coupling |
 | SOTA.012 | Multi-Representation Arch | SOTA | Pack → multiple views (vector, graph, hierarchical) |
 | SOTA.013 | SAI (Superhuman Adaptable Intelligence) | Emerging (LeCun 2026) | Evolvability как главная характеристика AI. Не AGI (повторить человека) и не ASI (превзойти на тех же задачах), а SAI — быстро осваивать новые классы задач, включая недоступные людям. World models + adaptability. Пересекается с Эволюционируемостью в АрхГейте. |
+| SOTA.020 | Quantum-Like Modeling Lens (FPF C.26*, Илевский 2026) | SOTA (live extension к FPF, edition 2026-04) | Probe-coupled state change, order effects, incompatibility, entanglement-like non-separability в социотехнических системах. Линза, не онтология. Применяется при ArchGate / проектировании метрик / диагностики / observability — после исчерпания классического набора. Полный метод применения: DP.METHOD.050. |
 
 ## Полная таблица: Pack Architecture SOTA (SPF.SPEC.003)
 

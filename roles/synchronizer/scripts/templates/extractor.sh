@@ -2,7 +2,7 @@
 # Шаблон уведомлений: Экстрактор (R2)
 # Вызывается из notify.sh через source
 
-REPORTS_DIR="/Users/elenadolgova/IWE/DS-strategy/inbox/extraction-reports"
+REPORTS_DIR="{{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}}/inbox/extraction-reports"
 DATE=$(date +%Y-%m-%d)
 
 build_message() {
@@ -19,9 +19,9 @@ build_message() {
             fi
 
             local candidates
-            candidates=$(grep -c '^## Кандидат' "$report" 2>/dev/null || echo "0")
+            candidates=$(grep -c '^## Кандидат' "$report" 2>/dev/null || true); candidates=${candidates:-0}
             local accept
-            accept=$(grep -c 'Вердикт.*accept' "$report" 2>/dev/null || echo "0")
+            accept=$(grep -c 'Вердикт.*accept' "$report" 2>/dev/null || true); accept=${accept:-0}
 
             printf "<b>🔍 Knowledge Extractor: %s</b>\n\n" "$process"
             printf "📅 %s\n\n" "$DATE"

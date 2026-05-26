@@ -1,11 +1,19 @@
 ---
 valid_from: 2026-04-09
 originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
+
+type: reference
+horizon: warm
+domains: [reference]
+status: active
+owner: user
+schema_version: 1
+
+name: "repo-type-rules"
+description: "Операционный файл памяти IWE"
 ---
 # Правила работы по типам репозиториев
 
-> **Source-of-truth полной маршрутизации:** `PACK-digital-platform/02-domain-entities/DP.KR.001-knowledge-routing.md`
-> Реестр репо: `DS-ecosystem-development/0.OPS/REPOSITORY-REGISTRY.md`
 
 ## 3 типа репозиториев
 
@@ -65,7 +73,6 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 
 > **Репо агентов/ботов = преимущественно код и текст-как-код.**
 > Архитектурные решения, UX-модели, доменные описания → Pack цифровой платформы.
-> Межсистемные сценарии → DS-ecosystem-development.
 > В instrument-репо остаётся: код, конфиги, CLAUDE.md (привязка к Pack), README (как запустить).
 
 ### Именование DS/instrument для ИИ-систем
@@ -79,7 +86,6 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 
 **СТРОГО НЕЛЬЗЯ:** Скрипты, код, промпты, launchd-конфиги, агенты. Это ТОЛЬКО база данных — входы и выходы агентов. Агенты живут в своих DS-*-agent/ репо или DS-synchronizer/.
 
-### DS/governance (DS-ecosystem-development)
 
 **Содержит:** Governance (реестры, планы, ADR, оргструктура) + операционная работа (семинары, предложения, черновики).
 
@@ -87,9 +93,8 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 
 **Правило:** Формализованное знание домена НЕ хранится здесь постоянно — только транзитом через KE.
 
-**0.9.Inbox:** только материалы к обсуждению с командой (повестки, предложения, вопросы). НЕ хранить WP-context файлы — они в governance-репо (`DS-strategy/inbox/`). Подробно: DP.KR.001 §5.3.
+**0.9.Inbox:** только материалы к обсуждению с командой (повестки, предложения, вопросы). НЕ хранить WP-context файлы — они в DS-strategy/inbox/. Подробно: DP.KR.001 §5.3.
 
----
 
 ## Repository-first режим
 
@@ -101,7 +106,6 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 
 Если контекст не найден → скажи "в репозитории нет источника", предложи создать документ.
 
----
 
 ## Context Pack (формат)
 
@@ -115,15 +119,12 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 - Документ X — не релевантен, т.к. ...
 ```
 
----
 
 ## Frontmatter (базовый)
 
 ```yaml
----
 type: doc    # doc, spec, process, report
 status: draft # draft, active, archived
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
----
 ```

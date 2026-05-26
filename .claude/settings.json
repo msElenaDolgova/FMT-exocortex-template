@@ -1,6 +1,6 @@
 {
   "permissions": {
-    "defaultMode": "dontAsk",
+    "defaultMode": "acceptEdits",
     "allow": [
       "Edit(/.claude/skills/**)",
       "mcp__google-drive__search_files",
@@ -22,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/wp-gate-reminder.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/wp-gate-reminder.sh"
           }
         ]
       },
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/close-gate-reminder.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/close-gate-reminder.sh"
           }
         ]
       }
@@ -41,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/extensions-gate.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/extensions-gate.sh"
           }
         ]
       },
@@ -50,7 +50,25 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/protocol-artifact-validate.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/protocol-artifact-validate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/capture-bus.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/dry-run-gate.sh"
           }
         ]
       }
@@ -61,7 +79,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/protocol-completion-reminder.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/protocol-completion-reminder.sh"
           }
         ]
       }
@@ -71,7 +89,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/protocol-stop-gate.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/protocol-stop-gate.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/capture-bus.sh"
           }
         ]
       }
@@ -81,7 +107,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/precompact-checkpoint.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/precompact-checkpoint.sh"
           }
         ]
       }

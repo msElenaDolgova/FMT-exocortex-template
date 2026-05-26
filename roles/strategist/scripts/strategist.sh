@@ -6,15 +6,45 @@ set -e
 
 # Предотвращаем сон: -i (idle, работает на батарее) -d (display) -u (user activity)
 # Флаг -s (system sleep) не используем — он НЕ работает на батарее (OBC может переключить профиль)
-caffeinate -diu -w $$ &
+# Linux: caffeinate отсутствует — guard через command -v (на Linux достаточно, что cron/systemd сам управляет sleep)
+command -v caffeinate >/dev/null 2>&1 && caffeinate -diu -w $$ &
 
 # Конфигурация
+# WP-273 R5 fix (Round 5 Евгения): substituted runner живёт в .iwe-runtime/,
+# но prompts/ и notify.sh — read-only данные, должны браться из FMT (immutable upstream).
+# Архитектурный принцип: substituted в runtime, read-only из FMT через $IWE_TEMPLATE.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-WORKSPACE="$HOME/IWE/DS-strategy"
-PROMPTS_DIR="$REPO_DIR/prompts"
+# WP-273 0.29.4 R6.1 fix: было хардкоженое имя governance-репо.
+# На Mac: build-runtime подставляет плейсхолдеры в .iwe-runtime/strategist.sh.
+# На сервере (без build-runtime): резолвится через env vars с fallback.
+# IWE_WORKSPACE / IWE_GOVERNANCE_REPO задаются в /etc/iwe/env или ~/.config/aist/env.
+WORKSPACE="${IWE_WORKSPACE:-$HOME/IWE}/${IWE_GOVERNANCE_REPO:-DS-strategy}"
+
+# PROMPTS_DIR резолв: $IWE_TEMPLATE (Generated runtime) → $HOME/IWE/FMT-exocortex-template (default) → relative (legacy fallback)
+if [ -n "${IWE_TEMPLATE:-}" ] && [ -d "$IWE_TEMPLATE/roles/strategist/prompts" ]; then
+    PROMPTS_DIR="$IWE_TEMPLATE/roles/strategist/prompts"
+elif [ -d "$HOME/IWE/FMT-exocortex-template/roles/strategist/prompts" ]; then
+    PROMPTS_DIR="$HOME/IWE/FMT-exocortex-template/roles/strategist/prompts"
+    # WP-273 0.29.3 (sub-agent assessment R3): silent degradation guard.
+    # Если IWE_TEMPLATE не экспортирована — env неполная, дальше будут проблемы.
+    echo "[$(date '+%H:%M:%S')] WARN: \$IWE_TEMPLATE не задана, fallback на $HOME/IWE/FMT-exocortex-template. source ~/.zshenv?" >&2
+else
+    PROMPTS_DIR="$REPO_DIR/prompts"  # legacy: same dir as runner (pre-WP-273)
+    echo "[$(date '+%H:%M:%S')] WARN: legacy PROMPTS_DIR fallback на $PROMPTS_DIR (pre-WP-273). Запустите migrate-to-runtime-target.sh." >&2
+fi
+
 LOG_DIR="$HOME/logs/strategist"
-CLAUDE_PATH="/opt/homebrew/bin/claude"
+# На Mac: build-runtime подставляет {{CLAUDE_PATH}}. На сервере — резолв через env/PATH/known paths.
+if [ -n "${CLAUDE_CLI_PATH:-}" ]; then
+    CLAUDE_PATH="$CLAUDE_CLI_PATH"
+elif command -v claude &>/dev/null; then
+    CLAUDE_PATH="$(command -v claude)"
+elif [ -x "$HOME/.npm-global/bin/claude" ]; then
+    CLAUDE_PATH="$HOME/.npm-global/bin/claude"
+else
+    CLAUDE_PATH="{{CLAUDE_PATH}}"  # fallback: build-runtime должен был подставить
+fi
 CLAUDE_TIMEOUT=1800  # 30 мин — защита от зависания Claude CLI
 
 # macOS не имеет GNU timeout — используем perl fallback
@@ -61,12 +91,23 @@ notify() {
 
 notify_telegram() {
     local scenario="$1"
-    local notify_script="$REPO_DIR/../synchronizer/scripts/notify.sh"
+    # WP-273 R5: notify.sh — read-only из FMT, не substituted (нет плейсхолдеров).
+    local notify_script
+    if [ -n "${IWE_TEMPLATE:-}" ] && [ -f "$IWE_TEMPLATE/roles/synchronizer/scripts/notify.sh" ]; then
+        notify_script="$IWE_TEMPLATE/roles/synchronizer/scripts/notify.sh"
+    elif [ -f "$HOME/IWE/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh" ]; then
+        notify_script="$HOME/IWE/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh"
+    else
+        notify_script="$REPO_DIR/../synchronizer/scripts/notify.sh"  # legacy fallback
+    fi
     [ -f "$notify_script" ] && "$notify_script" strategist "$scenario" >> "$LOG_FILE" 2>&1 || true
 }
 
 run_claude() {
     local command_file="$1"
+    # Опциональная модель: второй аргумент или IWE_STRATEGIST_MODEL из env.
+    # Приоритет: аргумент > env > пустая строка (дефолт Claude CLI).
+    local model_override="${2:-${IWE_STRATEGIST_MODEL:-}}"
     local command_path="$PROMPTS_DIR/$command_file.md"
 
     if [ ! -f "$command_path" ]; then
@@ -74,9 +115,21 @@ run_claude() {
         exit 1
     fi
 
-    # Читаем содержимое команды
+    # Читаем содержимое команды.
+    # WP-273 0.29.6 R6.1**: build-runtime подменял плейсхолдеры в этих sed-выражениях
+    # → runner становился сломан после build (искал значение в промпте вместо плейсхолдера).
+    # Escape: собираем двойно-фигурные токены через bash-конкатенацию — build-runtime sed
+    # не находит цельный паттерн и не трогает.
     local prompt
-    prompt=$(cat "$command_path")
+    local _gov_repo="${IWE_GOVERNANCE_REPO:-DS-strategy}"
+    local _ws="${IWE_WORKSPACE:-$HOME/IWE}"
+    local _gh_user="${GITHUB_USER:-your-username}"
+    local _o='{''{' _c='}''}'  # escape: build-runtime ищет цельный двойно-фигурный токен с UPPER_NAME внутри, поэтому конкатенация одиночных скобок его не матчит
+    prompt=$(sed \
+        -e "s|${_o}GOVERNANCE_REPO${_c}|$_gov_repo|g" \
+        -e "s|${_o}WORKSPACE_DIR${_c}|$_ws|g" \
+        -e "s|${_o}GITHUB_USER${_c}|$_gh_user|g" \
+        "$command_path")
 
     # Inject current date + day of week (prevents LLM calendar arithmetic errors)
     local ru_date_context
@@ -99,7 +152,15 @@ ${prompt}"
 
     # Запуск Claude Code с содержимым команды как промпт (с timeout-защитой)
     local rc=0
-    timeout "$CLAUDE_TIMEOUT" "$CLAUDE_PATH" --dangerously-skip-permissions \
+    local model_args=()
+    if [ -n "$model_override" ]; then
+        model_args=(--model "$model_override")
+        log "Model override: $model_override"
+    fi
+    # NB: --dangerously-skip-permissions не используется — Claude Code блокирует флаг
+    # под root/sudo (Linux cron). --allowedTools задаёт явный whitelist, чего достаточно.
+    timeout "$CLAUDE_TIMEOUT" "$CLAUDE_PATH" \
+        "${model_args[@]}" \
         --allowedTools "Read,Write,Edit,Glob,Grep,Bash" \
         -p "$prompt" \
         >> "$LOG_FILE" 2>&1 || rc=$?
@@ -200,11 +261,11 @@ case "$1" in
 
         if [ "$DAY_OF_WEEK" -eq "$STRATEGY_DAY_NUM" ]; then
             log "Strategy day ($STRATEGY_DAY_NAME): running session prep"
-            run_claude "session-prep"
+            run_claude "session-prep" "claude-sonnet-4-6"
             notify_telegram "session-prep"
         else
             log "Morning: running day plan"
-            run_claude "day-plan"
+            run_claude "day-plan" "claude-sonnet-4-6"
             notify_telegram "day-plan"
         fi
         ;;
@@ -220,7 +281,7 @@ case "$1" in
             exit 0
         fi
         log "Sunday: running week review"
-        run_claude "week-review"
+        run_claude "week-review" "claude-opus-4-7"
         # Fallback push for Knowledge Index (week-review creates a post there)
         # KI_REPO may not exist for all users — guard with [ -d ]
         KI_REPO="$HOME/IWE/DS-Knowledge-Index"
@@ -231,32 +292,34 @@ case "$1" in
         ;;
     "session-prep")
         log "Manual: running session prep"
-        run_claude "session-prep"
+        run_claude "session-prep" "claude-sonnet-4-6"
         notify_telegram "session-prep"
         ;;
     "day-plan")
         log "Manual: running day plan"
-        run_claude "day-plan"
+        run_claude "day-plan" "claude-sonnet-4-6"
         notify_telegram "day-plan"
         ;;
     "note-review")
         acquire_lock "note-review"
         log "Evening: running note review"
         # Canary: count bold notes before (exclude 🔄 — deferred ideas stay bold by design)
+        # NB: `grep -c` при exit 1 (no matches) печатает "0" до `||`, так что `|| echo 0`
+        # давал двухстрочный "0\n0" и ломал арифметику. Используем `|| true` + fallback.
         FLEETING="$WORKSPACE/inbox/fleeting-notes.md"
-        BOLD_BEFORE=$(grep -c '^\*\*' "$FLEETING" 2>/dev/null || echo 0)
-        BOLD_NEW_BEFORE=$(grep -vc '🔄' <(grep '^\*\*' "$FLEETING" 2>/dev/null) 2>/dev/null || echo 0)
+        BOLD_BEFORE=$(grep -c '^\*\*' "$FLEETING" 2>/dev/null || true); BOLD_BEFORE=${BOLD_BEFORE:-0}
+        BOLD_NEW_BEFORE=$(grep -vc '🔄' <(grep '^\*\*' "$FLEETING" 2>/dev/null) 2>/dev/null || true); BOLD_NEW_BEFORE=${BOLD_NEW_BEFORE:-0}
         log "Canary: $BOLD_BEFORE bold total ($BOLD_NEW_BEFORE new, $(( BOLD_BEFORE - BOLD_NEW_BEFORE )) deferred 🔄)"
 
-        run_claude "note-review"
+        run_claude "note-review" "claude-haiku-4-5-20251001"
 
         # Canary: count bold notes after (needs to be visible for alert at line ~274)
-        BOLD_AFTER=$(grep -c '^\*\*' "$FLEETING" 2>/dev/null || echo 0)
-        BOLD_NEW_AFTER=$(grep -vc '🔄' <(grep '^\*\*' "$FLEETING" 2>/dev/null) 2>/dev/null || echo 0)
+        BOLD_AFTER=$(grep -c '^\*\*' "$FLEETING" 2>/dev/null || true); BOLD_AFTER=${BOLD_AFTER:-0}
+        BOLD_NEW_AFTER=$(grep -vc '🔄' <(grep '^\*\*' "$FLEETING" 2>/dev/null) 2>/dev/null || true); BOLD_NEW_AFTER=${BOLD_NEW_AFTER:-0}
         # Non-blocking diagnostic (isolated from set -e to protect cleanup below)
         (
             log "Canary: $BOLD_AFTER bold total ($BOLD_NEW_AFTER new)"
-            NON_BOLD=$(grep -c '^[^*#>-]' "$FLEETING" 2>/dev/null || echo 0)
+            NON_BOLD=$(grep -c '^[^*#>-]' "$FLEETING" 2>/dev/null || true); NON_BOLD=${NON_BOLD:-0}
             log "Non-bold content lines: $NON_BOLD"
             if [ "$BOLD_NEW_AFTER" -ge "$BOLD_NEW_BEFORE" ] && [ "$BOLD_NEW_BEFORE" -gt 0 ]; then
                 log "WARN: Note-Review Step 10 may have failed — new bold notes did not decrease ($BOLD_NEW_BEFORE → $BOLD_NEW_AFTER)"
@@ -295,7 +358,7 @@ case "$1" in
         ;;
     "day-close")
         log "Manual: running day close"
-        run_claude "day-close"
+        run_claude "day-close" "claude-sonnet-4-6"
         notify_telegram "day-close"
         ;;
     "strategy-session")

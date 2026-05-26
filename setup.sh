@@ -8,7 +8,7 @@
 #
 set -e
 
-VERSION="0.6.0"
+VERSION="0.7.0"  # WP-273 Этап 2: Generated runtime architecture (F)
 DRY_RUN=false
 CORE_ONLY=false
 VALIDATE_ONLY=false
@@ -51,12 +51,19 @@ if $VALIDATE_ONLY; then
     echo "=========================================="
     echo ""
     SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-    ENV_FILE="$SCRIPT_DIR/.exocortex.env"
+    # WP-273 Этап 2: .exocortex.env живёт в $WORKSPACE_DIR/ (родитель FMT-template),
+    # а не внутри FMT (раньше). Сначала проверяем актуальное место, потом legacy fallback.
+    WORKSPACE_GUESS="$(dirname "$SCRIPT_DIR")"
+    if [ -f "$WORKSPACE_GUESS/.exocortex.env" ]; then
+        ENV_FILE="$WORKSPACE_GUESS/.exocortex.env"
+    else
+        ENV_FILE="$SCRIPT_DIR/.exocortex.env"  # legacy fallback (pre-WP-273)
+    fi
     ERRORS=0
 
     # Load .exocortex.env
     if [ -f "$ENV_FILE" ]; then
-        echo "[1/4] Env-конфиг... ✓ .exocortex.env найден"
+        echo "[1/4] Env-конфиг... ✓ .exocortex.env найден ($ENV_FILE)"
         # Safe read: grep KEY=VALUE, no eval/source (values may contain spaces)
         _env_get() { grep "^$1=" "$ENV_FILE" 2>/dev/null | head -1 | cut -d'=' -f2-; }
         # Check required keys
@@ -103,6 +110,19 @@ if $VALIDATE_ONLY; then
     echo "[4/4] MCP-доступность..."
     echo "  MCP подключается через claude.ai/settings/connectors"
     echo "  Проверьте командой /mcp в Claude Code"
+
+    # Delegate структурные инварианты валидатору шаблона (installed-режим:
+    # пропускает чеки, легитимно нарушаемые после setup — /Users/, /opt/homebrew, MEMORY skeleton).
+    # См. setup/validate-template.sh — единый источник чеков 1, 5, 6, 7.
+    if [ -x "$SCRIPT_DIR/setup/validate-template.sh" ] || [ -f "$SCRIPT_DIR/setup/validate-template.sh" ]; then
+        echo ""
+        echo "[5/5] Структурные инварианты (delegate → validate-template.sh --mode=installed)..."
+        if bash "$SCRIPT_DIR/setup/validate-template.sh" --mode=installed "$SCRIPT_DIR" 2>&1 | sed 's/^/  /'; then
+            :
+        else
+            ERRORS=$((ERRORS + 1))
+        fi
+    fi
 
     echo ""
     if [ "$ERRORS" -eq 0 ]; then
@@ -174,19 +194,25 @@ if $CORE_ONLY; then
     echo "  Режим --core: проверяются только обязательные зависимости (git)."
     echo "  GitHub CLI, Node.js, Claude Code — не требуются."
 else
-    check_command "gh" "GitHub CLI" "brew install gh"
-    check_command "node" "Node.js" "brew install node (or https://nodejs.org)"
-    check_command "npm" "npm" "Comes with Node.js"
-    check_command "claude" "Claude Code" "npm install -g @anthropic-ai/claude-code"
+    # В CI-режиме (SETUP_CI=1) node/npm/claude — необязательны: Test 10 проверяет delivery
+    # и role-installation, а не наличие runtime-инструментов на машине.
+    # Паттерн уже установлен для gh auth ниже (строка с SETUP_CI).
+    _TOOL_REQUIRED="${SETUP_CI:+false}"; _TOOL_REQUIRED="${_TOOL_REQUIRED:-true}"
+    check_command "gh" "GitHub CLI" "brew install gh" "$_TOOL_REQUIRED"
+    check_command "node" "Node.js" "brew install node (or https://nodejs.org)" "$_TOOL_REQUIRED"
+    check_command "npm" "npm" "Comes with Node.js" "$_TOOL_REQUIRED"
+    check_command "claude" "Claude Code" "npm install -g @anthropic-ai/claude-code" "$_TOOL_REQUIRED"
 
     # Check gh auth
     if command -v gh >/dev/null 2>&1; then
         if gh auth status >/dev/null 2>&1; then
             echo "  ✓ GitHub CLI: authenticated"
         else
-            echo "  ✗ GitHub CLI: not authenticated"
-            echo "    Run: gh auth login"
-            PREREQ_FAIL=1
+            echo "  ⚠ GitHub CLI: not authenticated"
+            if [ -z "${SETUP_CI:-}" ]; then
+                echo "    Run: gh auth login"
+                PREREQ_FAIL=1
+            fi
         fi
     fi
 fi
@@ -199,34 +225,68 @@ if [ "$PREREQ_FAIL" -eq 1 ]; then
 fi
 
 # === Collect configuration ===
-read -p "GitHub username (или Enter для пропуска): " GITHUB_USER
-GITHUB_USER="${GITHUB_USER:-your-username}"
-
-read -p "Workspace directory [$(dirname "$TEMPLATE_DIR")]: " WORKSPACE_DIR
-WORKSPACE_DIR="${WORKSPACE_DIR:-$(dirname "$TEMPLATE_DIR")}"
-# Expand ~ to $HOME
-WORKSPACE_DIR="${WORKSPACE_DIR/#\~/$HOME}"
-
-if $CORE_ONLY; then
-    # Core: используем defaults, не спрашиваем Claude-специфичные параметры
-    CLAUDE_PATH="${AI_CLI:-claude}"
-    TIMEZONE_HOUR="4"
-    TIMEZONE_DESC="4:00 UTC"
-else
-    read -p "Claude CLI path [$(command -v claude || echo '/opt/homebrew/bin/claude')]: " CLAUDE_PATH
-    CLAUDE_PATH="${CLAUDE_PATH:-$(command -v claude || echo '/opt/homebrew/bin/claude')}"
-
-    read -p "Strategist launch hour (UTC, 0-23) [4]: " TIMEZONE_HOUR
+# SETUP_CI=1: non-interactive mode for smoke tests and CI.
+# All values read from env vars; interactive prompts skipped.
+if [ -n "${SETUP_CI:-}" ]; then
+    GITHUB_USER="${GITHUB_USER:-smoke-test}"
+    WORKSPACE_DIR="${WORKSPACE_DIR:-$(dirname "$TEMPLATE_DIR")}"
+    WORKSPACE_DIR="${WORKSPACE_DIR/#\~/$HOME}"
+    CLAUDE_PATH="${CLAUDE_PATH:-claude}"
     TIMEZONE_HOUR="${TIMEZONE_HOUR:-4}"
+    TIMEZONE_DESC="${TIMEZONE_DESC:-4:00 UTC}"
+    echo "  [CI] GITHUB_USER=$GITHUB_USER WORKSPACE_DIR=$WORKSPACE_DIR"
+else
+    read -p "GitHub username (или Enter для пропуска): " GITHUB_USER
+    GITHUB_USER="${GITHUB_USER:-your-username}"
 
-    read -p "Timezone description (e.g. '7:00 MSK') [${TIMEZONE_HOUR}:00 UTC]: " TIMEZONE_DESC
-    TIMEZONE_DESC="${TIMEZONE_DESC:-${TIMEZONE_HOUR}:00 UTC}"
+    read -p "Workspace directory [$(dirname "$TEMPLATE_DIR")]: " WORKSPACE_DIR
+    WORKSPACE_DIR="${WORKSPACE_DIR:-$(dirname "$TEMPLATE_DIR")}"
+    # Expand ~ to $HOME
+    WORKSPACE_DIR="${WORKSPACE_DIR/#\~/$HOME}"
+
+    if $CORE_ONLY; then
+        # Core: используем defaults, не спрашиваем Claude-специфичные параметры
+        CLAUDE_PATH="${AI_CLI:-claude}"
+        TIMEZONE_HOUR="4"
+        TIMEZONE_DESC="4:00 UTC"
+    else
+        read -p "Claude CLI path [$(command -v claude || echo '/opt/homebrew/bin/claude')]: " CLAUDE_PATH
+        CLAUDE_PATH="${CLAUDE_PATH:-$(command -v claude || echo '/opt/homebrew/bin/claude')}"
+
+        read -p "Strategist launch hour (UTC, 0-23) [4]: " TIMEZONE_HOUR
+        TIMEZONE_HOUR="${TIMEZONE_HOUR:-4}"
+
+        read -p "Timezone description (e.g. '7:00 MSK') [${TIMEZONE_HOUR}:00 UTC]: " TIMEZONE_DESC
+        TIMEZONE_DESC="${TIMEZONE_DESC:-${TIMEZONE_HOUR}:00 UTC}"
+    fi
 fi
 
 HOME_DIR="$HOME"
 
 # Compute Claude project slug: /Users/alice/IWE → -Users-alice-IWE
 CLAUDE_PROJECT_SLUG="$(echo "$WORKSPACE_DIR" | tr '/' '-')"
+
+# Auto-detect governance repo (used in placeholder substitution + .exocortex.env).
+# Стратегия: (1) DS-strategy (default), (2) wildcard DS-*-strategy* (legacy/локальные имена).
+# Если ни один не найден — default DS-strategy (будет создан при первом seed-ритуале).
+GOVERNANCE_REPO=""
+if [ -d "$WORKSPACE_DIR/DS-strategy" ]; then
+    GOVERNANCE_REPO="DS-strategy"
+fi
+if [ -z "$GOVERNANCE_REPO" ]; then
+    for d in "$WORKSPACE_DIR"/DS-*; do
+        case "${d##*/}" in
+            DS-*strategy*|DS-strategy)
+                GOVERNANCE_REPO="${d##*/}"
+                break
+                ;;
+        esac
+    done
+fi
+GOVERNANCE_REPO="${GOVERNANCE_REPO:-DS-strategy}"
+
+# IWE_TEMPLATE = путь к FMT-репо (где живёт setup.sh).
+IWE_TEMPLATE_PATH="$TEMPLATE_DIR"
 
 echo ""
 echo "Configuration:"
@@ -243,8 +303,8 @@ echo "  Home dir:       $HOME_DIR"
 echo "  Project slug:   $CLAUDE_PROJECT_SLUG"
 echo ""
 
-# === Data Policy acceptance (skip in dry-run) ===
-if ! $DRY_RUN; then
+# === Data Policy acceptance (skip in dry-run and CI) ===
+if ! $DRY_RUN && [ -z "${SETUP_CI:-}" ]; then
     echo "Data Policy"
     echo "  IWE collects and processes data as described in docs/DATA-POLICY.md"
     echo "  Summary: profile, sessions, and learning data are stored on the platform (Neon DB)."
@@ -267,17 +327,22 @@ if ! $DRY_RUN; then
 fi
 
 # === Save configuration to .exocortex.env ===
-ENV_FILE="$TEMPLATE_DIR/.exocortex.env"
+# WP-273 Этап 2: .exocortex.env живёт в $WORKSPACE_DIR/, не в FMT.
+# FMT остаётся clean upstream (immutable). Все substituted значения генерируются
+# build-runtime.sh в $WORKSPACE_DIR/.iwe-runtime/.
+ENV_FILE="$WORKSPACE_DIR/.exocortex.env"
+IWE_RUNTIME_PATH="$WORKSPACE_DIR/.iwe-runtime"
 if $DRY_RUN; then
     echo "[DRY RUN] Would save configuration to $ENV_FILE"
 else
+    mkdir -p "$WORKSPACE_DIR"
     cat > "$ENV_FILE" <<ENVEOF
 # Exocortex configuration (generated by setup.sh v$VERSION)
-# This file is read by update.sh to substitute placeholders after downloading upstream files.
+# This file is read by build-runtime.sh / update.sh to substitute placeholders.
 # SECURITY: chmod 600. Listed in .gitignore. Do NOT commit this file.
 # Do not add shell commands — only KEY=VALUE lines are allowed.
 
-# === Core (substituted into template files) ===
+# === Core (substituted into runtime files via build-runtime.sh) ===
 GITHUB_USER=$GITHUB_USER
 WORKSPACE_DIR=$WORKSPACE_DIR
 CLAUDE_PATH=$CLAUDE_PATH
@@ -285,6 +350,9 @@ CLAUDE_PROJECT_SLUG=$CLAUDE_PROJECT_SLUG
 TIMEZONE_HOUR=$TIMEZONE_HOUR
 TIMEZONE_DESC=$TIMEZONE_DESC
 HOME_DIR=$HOME_DIR
+GOVERNANCE_REPO=$GOVERNANCE_REPO
+IWE_TEMPLATE=$IWE_TEMPLATE_PATH
+IWE_RUNTIME=$IWE_RUNTIME_PATH
 
 # === Platform LLM Proxy (optional own API key for unlimited usage) ===
 PLATFORM_LLM_PROXY_URL=https://llm.aisystant.com/v1
@@ -302,34 +370,19 @@ else
     mkdir -p "$WORKSPACE_DIR"
 fi
 
-# === 1. Substitute placeholders ===
+# === 1. Build generated runtime (.iwe-runtime/) ===
+# WP-273 Этап 2: substituted-файлы живут в $WORKSPACE_DIR/.iwe-runtime/
+# (Generated runtime, F). FMT остаётся clean upstream — никаких sed по $TEMPLATE_DIR.
+# Реестр overlay-файлов: .claude/runtime-overlay.yaml. Реализация: setup/build-runtime.sh.
 echo ""
-echo "[1/6] Configuring placeholders..."
+echo "[1/6] Building generated runtime..."
 
 if $DRY_RUN; then
-    PLACEHOLDER_FILES=$(find "$TEMPLATE_DIR" -type f \( -name "*.md" -o -name "*.json" -o -name "*.sh" -o -name "*.plist" -o -name "*.yaml" -o -name "*.yml" \) | wc -l | tr -d ' ')
-    echo "  [DRY RUN] Would substitute placeholders in $PLACEHOLDER_FILES files"
-    echo "    msElenaDolgova → $GITHUB_USER"
-    echo "    /Users/elenadolgova/IWE → $WORKSPACE_DIR"
-    echo "    /opt/homebrew/bin/claude → $CLAUDE_PATH"
-    echo "    -Users-elenadolgova-IWE → $CLAUDE_PROJECT_SLUG"
-    echo "    4 → $TIMEZONE_HOUR"
-    echo "    4:00 UTC → $TIMEZONE_DESC"
-    echo "    /Users/elenadolgova → $HOME_DIR"
+    bash "$TEMPLATE_DIR/setup/build-runtime.sh" --dry-run \
+        --workspace "$WORKSPACE_DIR" --env-file "$ENV_FILE" 2>&1 | sed 's/^/  /'
 else
-    find "$TEMPLATE_DIR" -type f \( -name "*.md" -o -name "*.json" -o -name "*.sh" -o -name "*.plist" -o -name "*.yaml" -o -name "*.yml" \) | while IFS= read -r file; do
-        sed_inplace \
-            -e "s|msElenaDolgova|$GITHUB_USER|g" \
-            -e "s|/Users/elenadolgova/IWE|$WORKSPACE_DIR|g" \
-            -e "s|/opt/homebrew/bin/claude|$CLAUDE_PATH|g" \
-            -e "s|-Users-elenadolgova-IWE|$CLAUDE_PROJECT_SLUG|g" \
-            -e "s|4|$TIMEZONE_HOUR|g" \
-            -e "s|4:00 UTC|$TIMEZONE_DESC|g" \
-            -e "s|/Users/elenadolgova|$HOME_DIR|g" \
-            "$file"
-    done
-
-    echo "  Placeholders substituted."
+    bash "$TEMPLATE_DIR/setup/build-runtime.sh" \
+        --workspace "$WORKSPACE_DIR" --env-file "$ENV_FILE" 2>&1 | sed 's/^/  /'
 
     # Enable pre-commit hook for platform compatibility checks
     if [ -d "$TEMPLATE_DIR/.githooks" ]; then
@@ -340,16 +393,31 @@ fi
 
 # (Repo rename removed — folder stays as FMT-exocortex-template)
 
-# === 2. Copy CLAUDE.md to workspace root ===
+# === 2. Copy CLAUDE.md to workspace root (with substitution) ===
+# FMT/CLAUDE.md остаётся clean upstream (плейсхолдеры). В workspace/CLAUDE.md
+# плейсхолдеры подставляются (single-file substitution, не sed по дереву).
+# .base копии — substituted (для 3-way merge).
 echo "[2/6] Installing CLAUDE.md..."
 if $DRY_RUN; then
-    echo "  [DRY RUN] Would copy: $TEMPLATE_DIR/CLAUDE.md → $WORKSPACE_DIR/CLAUDE.md"
+    echo "  [DRY RUN] Would copy: $TEMPLATE_DIR/CLAUDE.md → $WORKSPACE_DIR/CLAUDE.md (substituted)"
 else
     cp "$TEMPLATE_DIR/CLAUDE.md" "$WORKSPACE_DIR/CLAUDE.md"
-    # Save base copy for 3-way merge on future updates
-    cp "$TEMPLATE_DIR/CLAUDE.md" "$TEMPLATE_DIR/.claude.md.base"
-    cp "$TEMPLATE_DIR/CLAUDE.md" "$WORKSPACE_DIR/.claude.md.base"
-    echo "  Copied to $WORKSPACE_DIR/CLAUDE.md (+ merge base)"
+    sed_inplace \
+        -e "s|{{GITHUB_USER}}|$GITHUB_USER|g" \
+        -e "s|{{WORKSPACE_DIR}}|$WORKSPACE_DIR|g" \
+        -e "s|{{CLAUDE_PATH}}|$CLAUDE_PATH|g" \
+        -e "s|{{CLAUDE_PROJECT_SLUG}}|$CLAUDE_PROJECT_SLUG|g" \
+        -e "s|{{TIMEZONE_HOUR}}|$TIMEZONE_HOUR|g" \
+        -e "s|{{TIMEZONE_DESC}}|$TIMEZONE_DESC|g" \
+        -e "s|{{HOME_DIR}}|$HOME_DIR|g" \
+        -e "s|{{GOVERNANCE_REPO}}|$GOVERNANCE_REPO|g" \
+        -e "s|{{IWE_TEMPLATE}}|$IWE_TEMPLATE_PATH|g" \
+        -e "s|{{IWE_RUNTIME}}|$IWE_RUNTIME_PATH|g" \
+        "$WORKSPACE_DIR/CLAUDE.md"
+    # Save base copies for 3-way merge on future updates (substituted version)
+    cp "$WORKSPACE_DIR/CLAUDE.md" "$WORKSPACE_DIR/.claude.md.base"
+    cp "$WORKSPACE_DIR/CLAUDE.md" "$TEMPLATE_DIR/.claude.md.base"  # legacy compat for update.sh
+    echo "  Copied to $WORKSPACE_DIR/CLAUDE.md (+ merge base, substituted)"
 fi
 
 # === 3. Copy memory to Claude projects directory ===
@@ -357,7 +425,8 @@ echo "[3/6] Installing memory..."
 CLAUDE_MEMORY_DIR="$HOME/.claude/projects/$CLAUDE_PROJECT_SLUG/memory"
 if $DRY_RUN; then
     MEM_COUNT=$(ls "$TEMPLATE_DIR/memory/"*.md 2>/dev/null | wc -l | tr -d ' ')
-    echo "  [DRY RUN] Would copy $MEM_COUNT memory files → $CLAUDE_MEMORY_DIR/"
+    YAML_COUNT=$(ls "$TEMPLATE_DIR/memory/"*.yaml "$TEMPLATE_DIR/memory/"*.yml 2>/dev/null | wc -l | tr -d ' ')
+    echo "  [DRY RUN] Would copy $MEM_COUNT .md + $YAML_COUNT .yaml/.yml memory files → $CLAUDE_MEMORY_DIR/"
     if [ ! -e "$WORKSPACE_DIR/memory" ]; then
         echo "  [DRY RUN] Would create symlink: $WORKSPACE_DIR/memory → $CLAUDE_MEMORY_DIR"
     else
@@ -366,6 +435,10 @@ if $DRY_RUN; then
 else
     mkdir -p "$CLAUDE_MEMORY_DIR"
     cp "$TEMPLATE_DIR/memory/"*.md "$CLAUDE_MEMORY_DIR/"
+    # Deliver yaml/yml configs (e.g. day-rhythm-config.yaml) alongside .md files
+    for f in "$TEMPLATE_DIR/memory/"*.yaml "$TEMPLATE_DIR/memory/"*.yml; do
+        [ -f "$f" ] && cp "$f" "$CLAUDE_MEMORY_DIR/"
+    done
     echo "  Copied to $CLAUDE_MEMORY_DIR"
 
     # Create symlink so CLAUDE.md references (memory/protocol-open.md etc.) resolve from workspace root
@@ -409,13 +482,15 @@ else
     fi
 fi
 
-# === 4b. Propagate skills, hooks, rules to workspace ===
-echo "[4b] Installing skills, hooks, rules..."
+# === 4b. Propagate skills, hooks, rules, lib, config, detectors, scripts to workspace ===
+echo "[4b] Installing skills, hooks, rules, lib, config, detectors, scripts..."
 if $DRY_RUN; then
-    echo "  [DRY RUN] Would copy .claude/skills/, .claude/hooks/, .claude/rules/ → $WORKSPACE_DIR/.claude/"
+    echo "  [DRY RUN] Would copy .claude/{skills,hooks,rules,lib,config,detectors,scripts,agents}/ → $WORKSPACE_DIR/.claude/"
 else
     mkdir -p "$WORKSPACE_DIR/.claude"
-    for subdir in skills hooks rules; do
+    # lib/config/detectors — runtime dependencies капчер-шины (capture-bus.sh) и детекторов
+    # scripts — требуется скиллами (напр. load-extensions.sh)
+    for subdir in skills hooks rules lib config detectors scripts agents; do
         if [ -d "$TEMPLATE_DIR/.claude/$subdir" ]; then
             cp -r "$TEMPLATE_DIR/.claude/$subdir" "$WORKSPACE_DIR/.claude/"
             echo "  ✓ .claude/$subdir/ → $WORKSPACE_DIR/.claude/$subdir/"
@@ -470,41 +545,19 @@ fi
 # Lookup-слой для путей к скриптам: протоколы и скиллы ссылаются на
 # $IWE_SCRIPTS / $IWE_ROLES, а не на абсолютные пути. Перемещение скрипта
 # ломает одну переменную, а не N протоколов.
+#
+# Source-of-truth: setup/install-iwe-paths.sh (WP-273 R5).
+# Раньше блок дублировался здесь и в migrate-to-runtime-target.sh не было —
+# при миграции ~/.iwe-paths не апгрейдился (R5.3 Евгения, 27 апр).
 echo "[4d] Installing IWE environment variables..."
 
-IWE_ENV_FILE="$HOME/.iwe-paths"
-ZSHENV_FILE="$HOME/.zshenv"
-IWE_ENV_MARKER="# IWE environment (WP-219, DP.FM.009): lookup-слой для путей к скриптам"
-
 if $DRY_RUN; then
-    echo "  [DRY RUN] Would write $IWE_ENV_FILE with IWE_WORKSPACE/IWE_TEMPLATE/IWE_SCRIPTS/IWE_ROLES"
-    echo "  [DRY RUN] Would ensure $ZSHENV_FILE sources $IWE_ENV_FILE"
+    bash "$TEMPLATE_DIR/setup/install-iwe-paths.sh" \
+        --workspace "$WORKSPACE_DIR" --governance "$GOVERNANCE_REPO" --dry-run 2>&1 | sed 's/^/  /'
 else
-    cat > "$IWE_ENV_FILE" <<IWEENV_EOF
-# IWE environment variables
-# Generated by setup.sh v$VERSION. Rerun setup.sh or iwe-update to regenerate.
-# Do not edit manually — changes will be lost.
-
-export IWE_WORKSPACE="$WORKSPACE_DIR"
-export IWE_TEMPLATE="\$IWE_WORKSPACE/FMT-exocortex-template"
-export IWE_SCRIPTS="\$IWE_TEMPLATE/scripts"
-export IWE_ROLES="\$IWE_TEMPLATE/roles"
-IWEENV_EOF
-    echo "  ✓ $IWE_ENV_FILE written"
-
-    # Ensure ~/.zshenv sources ~/.iwe-paths (idempotent)
-    if [ -f "$ZSHENV_FILE" ] && grep -qF "$IWE_ENV_MARKER" "$ZSHENV_FILE"; then
-        echo "  ○ $ZSHENV_FILE already sources \$HOME/.iwe-paths"
-    else
-        cat >> "$ZSHENV_FILE" <<'ZSHENV_EOF'
-
-# IWE environment (WP-219, DP.FM.009): lookup-слой для путей к скриптам
-[ -f "$HOME/.iwe-paths" ] && source "$HOME/.iwe-paths"
-ZSHENV_EOF
-        echo "  ✓ $ZSHENV_FILE → sources \$HOME/.iwe-paths"
-    fi
-
-    echo "  ℹ  Restart shell or run: source $ZSHENV_FILE"
+    bash "$TEMPLATE_DIR/setup/install-iwe-paths.sh" \
+        --workspace "$WORKSPACE_DIR" --governance "$GOVERNANCE_REPO" 2>&1 | sed 's/^/  /'
+    echo "  ℹ  Restart shell or run: source $HOME/.zshenv"
 fi
 
 # === 5. Install roles (autodiscovery via role.yaml) ===
@@ -516,6 +569,11 @@ elif ! command -v launchctl >/dev/null 2>&1; then
     echo "  См. $TEMPLATE_DIR/roles/ROLE-CONTRACT.md"
 else
     echo "[5/6] Installing roles..."
+
+    # Source ~/.iwe-paths — гарантирует IWE_RUNTIME / IWE_WORKSPACE / IWE_TEMPLATE
+    # в env для role install.sh (тот же паттерн что в update.sh:836).
+    # Без этого install.sh падает в legacy fallback и видит {{плейсхолдеры}}.
+    [ -f "$HOME/.iwe-paths" ] && . "$HOME/.iwe-paths"
 
     MANUAL_ROLES=()
 
@@ -606,6 +664,35 @@ else
     fi
 fi
 
+# === 7. Clone Base repos (FPF + SPF) ===
+echo "[7/7] Installing Base repos (FPF, SPF)..."
+if $CORE_ONLY; then
+    echo "  пропущено (core mode)"
+elif ! command -v gh >/dev/null 2>&1; then
+    echo "  пропущено (gh CLI не найден)"
+else
+    clone_base_repo() {
+        local name="$1"
+        local gh_repo="$2"
+        local dest="$WORKSPACE_DIR/$name"
+        if [ -d "$dest/.git" ]; then
+            echo "  ✓ $name: уже установлен ($dest)"
+        elif $DRY_RUN; then
+            echo "  [DRY RUN] Would clone $gh_repo → $dest (--depth=1)"
+        else
+            if gh repo clone "$gh_repo" "$dest" -- --depth=1 --quiet 2>/dev/null; then
+                echo "  ✓ $name: клонирован ($dest)"
+            else
+                echo "  ⚠ $name: не удалось клонировать — проверьте сеть или доступ к $gh_repo"
+                echo "    Клонировать вручную: gh repo clone $gh_repo $dest -- --depth=1"
+            fi
+        fi
+    }
+
+    clone_base_repo "FPF" "ailev/FPF"
+    clone_base_repo "SPF" "TserenTserenov/SPF"
+fi
+
 # === Done ===
 echo ""
 if $DRY_RUN; then
@@ -648,4 +735,22 @@ else
     echo "Update from upstream:"
     echo "  cd $TEMPLATE_DIR && bash update.sh"
     echo ""
+
+    # === Post-install validation (WP-265 Ф8) ===
+    # Не запускаем автоматически — это interactive prompt. Skip в --core (нет gh/claude).
+    if ! $CORE_ONLY; then
+        echo "Финальная проверка инсталляции (рекомендуется):"
+        echo "  validate-режим setup.sh проверит: env-конфиг, обязательные файлы,"
+        echo "  extensions, доступность MCP, структурные инварианты."
+        echo ""
+        read -p "Запустить проверку сейчас? (y/n) " -n 1 -r || true
+        echo ""
+        if [[ ${REPLY:-} =~ ^[Yy]$ ]]; then
+            echo ""
+            bash "$TEMPLATE_DIR/setup.sh" --validate
+        else
+            echo "Пропущено. Запустить позже: cd $TEMPLATE_DIR && bash setup.sh --validate"
+        fi
+        echo ""
+    fi
 fi

@@ -3,12 +3,12 @@
 
 ## Контекст
 
-- **Заметки:** /Users/elenadolgova/IWE/DS-strategy/inbox/[fleeting-notes.md](https://github.com/msElenaDolgova/DS-strategy/blob/main/inbox/fleeting-notes.md)
-- **НЭП:** /Users/elenadolgova/IWE/DS-strategy/docs/Dissatisfactions.md
-- **Стратегия:** /Users/elenadolgova/IWE/DS-strategy/docs/Strategy.md
-- **План недели:** /Users/elenadolgova/IWE/DS-strategy/current/WeekPlan W*.md
-- **Inbox Экстрактора:** /Users/elenadolgova/IWE/DS-strategy/inbox/captures.md
-- **MEMORY:** ~/.claude/projects/-Users-elenadolgova-IWE/memory/MEMORY.md
+- **Заметки:** {{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}}/inbox/[fleeting-notes.md](https://github.com/{{GITHUB_USER}}/{{GOVERNANCE_REPO}}/blob/main/inbox/fleeting-notes.md)
+- **НЭП:** {{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}}/docs/Dissatisfactions.md
+- **Стратегия:** {{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}}/docs/Strategy.md
+- **План недели:** {{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}}/current/WeekPlan W*.md
+- **Inbox Экстрактора:** {{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}}/inbox/captures.md
+- **MEMORY:** ~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/MEMORY.md
 
 ## Предусловие
 
@@ -36,18 +36,18 @@
 
 #### 1. Прочитать заметки
 
-- Открой `DS-strategy/inbox/fleeting-notes.md`
+- Открой `{{GOVERNANCE_REPO}}/inbox/fleeting-notes.md`
 - Выдели все **жирные** заметки (`**текст**`) — это новые
 - Заметки с `🔄` — тоже просмотри, но не обрабатывай повторно (если нет нового контекста)
 - Если новых заметок нет → сообщить «Новых заметок нет» и завершить
 
 #### 2. Прочитать контекст
 
-- `DS-strategy/docs/Dissatisfactions.md` — текущие НЭП (S* стратегические, O* операционные)
-- `DS-strategy/current/WeekPlan W*.md` — РП и приоритеты недели
-- `DS-strategy/docs/Strategy.md` — фокусы года, приоритеты месяца
+- `{{GOVERNANCE_REPO}}/docs/Dissatisfactions.md` — текущие НЭП (S* стратегические, O* операционные)
+- `{{GOVERNANCE_REPO}}/current/WeekPlan W*.md` — РП и приоритеты недели
+- `{{GOVERNANCE_REPO}}/docs/Strategy.md` — фокусы года, приоритеты месяца
 - MEMORY.md — статусы РП
-- (опционально, если настроены агенты-сборщики QA) Структурированные QA-отчёты в `/Users/elenadolgova/IWE/<agent-workspace>/<scheduler>/<reports>/` — последний по дате: замечания (✏️) и urgent (high/critical) в начале файла. Кластеры (≥3 в одном кластере) → пометить. Если агентов нет — пропустить шаг.
+- QA-отчёт бота: `DS-agent-workspace/scheduler/feedback-triage/` (последний по дате) — **структурированный отчёт** из feedback_triage DB (авто-классификация ботом). Замечания (✏️) и urgent (high/critical) — в начале файла. Real-time алерты уже отправлены ботом → Note-Review только проверяет кластеры (≥3 в одном кластере → пометить)
 
 #### 3. Классифицировать каждую заметку
 
@@ -60,7 +60,7 @@
 | 3 | **Знание доменное** | Паттерн, различение, метод, правило — применимо вне реализации | → кандидат в DayPlan «Разбор заметок» (с предложением отдать Экстрактору). В `captures.md` — ТОЛЬКО если в заметке явно написано «Экстрактору» / «в captures» / «в Pack» |
 | 4 | **Знание реализационное** | Как устроено в конкретной системе, архитектурный выбор | → Задача: задокументировать (WeekPlan) |
 | 5 | **Черновик** | Зерно для поста/статьи, рефлексия с концептами | → рекомендация в конец WeekPlan (секция «Предложения Note-Review»). Файл НЕ создаётся — только после согласования |
-| 6 | **Личные данные** | Контакт, телефон, email, токен, аккаунт, реквизиты | → DS-strategy/personal/*.md |
+| 6 | **Личные данные** | Контакт, телефон, email, токен, аккаунт, реквизиты | → {{GOVERNANCE_REPO}}/personal/*.md |
 | 7 | **Шум** | Тест, дубль, случайное, ссылка без контекста, уже сделано / решено | → зачеркнуть ~~текст~~ |
 
 **Правила классификации:**
@@ -73,7 +73,7 @@
 - **Личные данные → personal/:** контакт → `personal/contacts.md`, аккаунт/URL → `personal/accounts.md`, токен/пароль → `personal/secrets.md`, прочее → `personal/reference.md`
 
 **Проверка актуальности (обязательно перед классификацией):**
-- Сверь заметку с коммитами за сегодня (`git log --since="00:00" --all --oneline` по всем /Users/elenadolgova/IWE/ репо) и текущим WeekPlan
+- Сверь заметку с коммитами за сегодня (`git log --since="00:00" --all --oneline` по всем {{WORKSPACE_DIR}}/ репо) и текущим WeekPlan
 - Если задача из заметки **уже сделана** (есть коммит или РП done) → Шум (зачеркнуть), не тянуть в план
 - Если проблема из заметки **уже решена** → Шум
 - Если заметка ссылается на ситуацию, которая **изменилась** за день → оценить с учётом нового контекста
@@ -121,11 +121,11 @@
 
 | Категория | Целевой документ |
 |-----------|------------------|
-| НЭП | `DS-strategy/docs/Dissatisfactions.md` |
-| Задача (на завтра / с дедлайном) | `DS-strategy/current/DayPlan*.md` (ближайший) или `WeekPlan W*.md` |
-| Задача (на неделю) | `DS-strategy/current/WeekPlan W*.md` |
-| Задача (стратегическая) | `DS-strategy/docs/Strategy.md` |
-| Личные данные | `DS-strategy/personal/` (contacts / accounts / secrets / reference) |
+| НЭП | `{{GOVERNANCE_REPO}}/docs/Dissatisfactions.md` |
+| Задача (на завтра / с дедлайном) | `{{GOVERNANCE_REPO}}/current/DayPlan*.md` (ближайший) или `WeekPlan W*.md` |
+| Задача (на неделю) | `{{GOVERNANCE_REPO}}/current/WeekPlan W*.md` |
+| Задача (стратегическая) | `{{GOVERNANCE_REPO}}/docs/Strategy.md` |
+| Личные данные | `{{GOVERNANCE_REPO}}/personal/` (contacts / accounts / secrets / reference) |
 
 > Стратег (Day-Plan, 4:00) читает эти документы и ВИДИТ предложения.
 > Пользователь может заглянуть в конец документа — увидит «на основании чего».
@@ -136,7 +136,7 @@
 > В `captures.md` писать ТОЛЬКО если в тексте заметки **явно** есть маркер: «Экстрактору», «в captures», «в Pack», «формализовать», «это в Экстрактор» (или синонимы).
 > Причина: captures.md = очередь Экстрактора, она должна содержать только то, что пользователь осознанно туда отправил. Note-Review не решает за пользователя.
 
-**Если маркер есть → пиши в `DS-strategy/inbox/captures.md`:**
+**Если маркер есть → пиши в `{{GOVERNANCE_REPO}}/inbox/captures.md`:**
 
 ```markdown
 ### [краткое описание знания]
@@ -181,10 +181,10 @@
 
 | Тип данных | Файл |
 |------------|------|
-| Телефон, email, контакт человека | `DS-strategy/personal/contacts.md` |
-| Аккаунт, логин, URL сервиса | `DS-strategy/personal/accounts.md` |
-| Токен, API-ключ, пароль | `DS-strategy/personal/secrets.md` |
-| Адрес, реквизиты, прочее | `DS-strategy/personal/reference.md` |
+| Телефон, email, контакт человека | `{{GOVERNANCE_REPO}}/personal/contacts.md` |
+| Аккаунт, логин, URL сервиса | `{{GOVERNANCE_REPO}}/personal/accounts.md` |
+| Токен, API-ключ, пароль | `{{GOVERNANCE_REPO}}/personal/secrets.md` |
+| Адрес, реквизиты, прочее | `{{GOVERNANCE_REPO}}/personal/reference.md` |
 
 > **secrets.md** — в .gitignore, не коммитится. Полные номера карт и PIN НЕ записывать.
 
@@ -245,8 +245,8 @@
 
 #### 11. Закоммитить
 
-- Закоммить изменения в DS-strategy (fleeting-notes.md + документы с предложениями + personal/ + inbox cleanup + archive)
-- Если были записи для Экстрактора → закоммить DS-strategy/inbox/captures.md
+- Закоммить изменения в {{GOVERNANCE_REPO}} (fleeting-notes.md + документы с предложениями + personal/ + inbox cleanup + archive)
+- Если были записи для Экстрактора → закоммить {{GOVERNANCE_REPO}}/inbox/captures.md
 - **secrets.md** НЕ коммитится (.gitignore) — но изменения в нём сохраняются локально
 - Запушить
 
@@ -293,5 +293,5 @@
 | **Day-Close** | Sync статусов, не зависит от Note-Review |
 | **Session-Prep** (Пн) | Читает ВСЕ документы, включая предложения. Может агрегировать неразобранные |
 | **Strategy-Session** | Разбирает 🔄-заметки, ревьюит draft-list.md (TTL-проверка), приоритизирует черновики |
-| **Экстрактор** | Читает DS-strategy/inbox/captures.md → формализует → Pack (после одобрения пользователя) |
+| **Экстрактор** | Читает {{GOVERNANCE_REPO}}/inbox/captures.md → формализует → Pack (после одобрения пользователя) |
 | **Draft-list** | Note-Review рекомендует черновики → WeekPlan (секция «Предложения Note-Review»). Strategy-Session ревьюит draft-list.md (TTL и приоритеты) |

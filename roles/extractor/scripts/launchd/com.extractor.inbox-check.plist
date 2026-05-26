@@ -7,7 +7,7 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/scripts/extractor.sh</string>
+        <string>{{IWE_RUNTIME}}/roles/extractor/scripts/extractor.sh</string>
         <string>inbox-check</string>
     </array>
 
@@ -15,17 +15,23 @@
     <integer>10800</integer>
 
     <key>StandardOutPath</key>
-    <string>/Users/elenadolgova/logs/extractor/launchd-inbox-check.log</string>
+    <string>{{HOME_DIR}}/logs/extractor/launchd-inbox-check.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/elenadolgova/logs/extractor/launchd-inbox-check-error.log</string>
+    <string>{{HOME_DIR}}/logs/extractor/launchd-inbox-check-error.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
         <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
         <key>HOME</key>
-        <string>/Users/elenadolgova</string>
+        <string>{{HOME_DIR}}</string>
+        <key>IWE_TEMPLATE</key>
+        <string>{{IWE_TEMPLATE}}</string>
+        <key>IWE_WORKSPACE</key>
+        <string>{{WORKSPACE_DIR}}</string>
+        <key>IWE_RUNTIME</key>
+        <string>{{IWE_RUNTIME}}</string>
     </dict>
 
     <key>RunAtLoad</key>

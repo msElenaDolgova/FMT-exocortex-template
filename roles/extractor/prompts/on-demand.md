@@ -14,8 +14,8 @@
 ## Конфигурация
 
 > Перед обработкой прочитай:
-> 1. `/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/config/routing.md` — таблицы маршрутизации
-> 2. `/Users/elenadolgova/IWE/FMT-exocortex-template/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов
+> 1. `{{WORKSPACE_DIR}}/FMT-exocortex-template/roles/extractor/config/routing.md` — таблицы маршрутизации
+> 2. `{{WORKSPACE_DIR}}/FMT-exocortex-template/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов
 
 ## Алгоритм
 
@@ -27,7 +27,7 @@
 
 Можно ли это использовать в другом проекте/контексте?
 - Да → продолжай
-- Нет → скажи: «Это governance-контент (привязан к конкретному проекту/задаче). Не подлежит экстракции. Записать в `DS-strategy/inbox/`?»
+- Нет → скажи: «Это governance-контент (привязан к конкретному проекту/задаче). Не подлежит экстракции. Записать в `{{GOVERNANCE_REPO}}/inbox/`?»
 
 ### Шаг 3: Классификация
 

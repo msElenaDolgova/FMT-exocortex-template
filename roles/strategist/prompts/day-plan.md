@@ -1,207 +1,117 @@
-> **DEPRECATED (WP-98, 2026-03-14).** Day Open перенесён в `memory/protocol-open.md § День` (ОРЗ-фрактал).
-> Этот файл сохранён для справки. При триггере «открывай день» → читать `protocol-open.md`.
 
-Выполни сценарий Day Plan для роли Стратег (R1).
+Выполни **полный** Day Open для роли Стратег (R1) **автономно**.
 
-Источник сценария: /Users/elenadolgova/IWE/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/scenarios/scheduled/02-day-plan.md
+## Алгоритм (skill /day-open, шаги 0-7)
 
-## Контекст
-
-- **HUB (личные планы):** /Users/elenadolgova/IWE/DS-strategy/current/
-- **SPOKE (планы репо):** /Users/elenadolgova/IWE/*/WORKPLAN.md
-- **MEMORY:** ~/.claude/projects/-Users-elenadolgova-IWE/memory/MEMORY.md
-
-## Именование файлов в current/
-
-```
-DS-strategy/
-├── current/
-│   ├── WeekPlan W{N} YYYY-MM-DD.md   # план недели (Пн дата)
-│   └── DayPlan YYYY-MM-DD.md         # план дня (текущая дата)
-├── archive/                           # старые файлы
-```
-
-В `current/` — только актуальные файлы. Старые перемещаются в `DS-strategy/archive/`.
-
-## Алгоритм
-
-### 1. Итоги вчера (Стратег собирает сам)
-
-**Стратег ОБЯЗАН** собрать коммиты за вчерашний день самостоятельно:
+### Шаг 0 — Scaffold (детерминированный каркас, БЛОКИРУЮЩЕЕ)
 
 ```bash
-# Для КАЖДОГО репо в /Users/elenadolgova/IWE/:
-git -C /Users/elenadolgova/IWE/<repo> log --since="yesterday 00:00" --until="today 00:00" --oneline --no-merges
-```
+DATE=$(date +%Y-%m-%d)
+_IWE="${IWE_WORKSPACE:-$HOME/IWE}"
+DAYPLAN_FILE="$_IWE/{{GOVERNANCE_REPO}}/current/DayPlan $DATE.md"
 
-- Пройди по ВСЕМ репозиториям в `/Users/elenadolgova/IWE/`
-- Сгруппируй коммиты по репозиториям
-- Сопоставь коммиты с РП из недельного плана
-- Определи статус каждого затронутого РП: done / partial / not started
-
-**Формат секции «Итоги вчера»:**
-
-```markdown
-## Итоги вчера (DD мес)
-
-**Коммиты:** N коммитов в M репо
-
-| Репо | Коммиты | Что сделано |
-|------|---------|-------------|
-| repo-name | N | Краткое описание |
-
-**РП закрыты:** (если есть)
-- ✅ #N Название
-
-**РП в работе:** (если есть)
-- 🔄 #N Название — что сделано, что осталось
-
-**Carry-over:** (если есть — что не доделано и переносится)
-- #N — причина
-```
-
-Если коммитов за вчера нет — написать: «Нет активности за вчера».
-
-### 2. Обновить WeekPlan по итогам вчера
-
-На основании собранных коммитов (шаг 1), обнови текущий `WeekPlan W*.md`:
-
-- Пометь завершённые РП как **done**
-- Обнови статусы partial с описанием прогресса
-- Добавь carry-over (что переносится) — в конец файла
-- **НЕ удаляй** ничего — только помечай и дописывай
-
-### 3. Контекст недели
-
-- Загрузи обновлённый WeekPlan
-- Рассчитай прогресс: done/total РП, оставшийся бюджет
-- Учти carry-over из итогов вчера
-
-### 3а. Контекстные файлы РП
-
-- Прочитай `DS-strategy/inbox/WP-*.md` (все файлы с `type: wp-context`, `status: active`)
-- Для каждого запланированного на сегодня РП — если есть соответствующий `WP-{N}*.md`:
-  - Добавь в таблицу «План на сегодня» колонку «Контекст» со ссылкой на файл
-  - В секцию «Рекомендация» включи: текущее состояние из context file, следующий шаг
-
-### 3c. Проверка незалитых коммитов бота (pilot → new-architecture)
-
-> **ВАЖНО:** Используй `git cherry`, а НЕ `git log A..B`. Cherry-pick создаёт новые SHA — `git log` считает их «отсутствующими», хотя содержимое идентичное. `git cherry` сравнивает по patch-id (содержимому).
-
-```bash
-# Коммиты на pilot, отсутствующие на prod (+ = реально отсутствует, - = уже cherry-picked)
-git -C /Users/elenadolgova/IWE/DS-IT-systems/aist_pilot_bot cherry -v new-architecture pilot 2>/dev/null | grep '^\+'
-# Коммиты на prod, отсутствующие на pilot (обратное направление)
-git -C /Users/elenadolgova/IWE/DS-IT-systems/aist_pilot_bot cherry -v pilot new-architecture 2>/dev/null | grep '^\+'
-```
-
-- Если есть коммиты с `+` в любом направлении → добавить в DayPlan секцию с ТОЧНЫМ числом:
-  ```
-  **🤖 Бот: рассинхрон веток:** N коммитов на pilot (не на prod), M коммитов на prod (не на pilot). Команда для синхронизации: «мержи на прод».
-  ```
-- Если коммитов с `+` нет → не включать секцию (ветки синхронизированы)
-
-> Сценарий merge: PROCESSES.md § 4.2. Merge выполняется ТОЛЬКО по команде пользователя.
-
-### 3b. Inbox Triage (заметки за вчера)
-
-> Note-Review (23:00) записывает предложения напрямую в целевые документы (WeekPlan, Dissatisfactions.md, captures.md).
-> Day-Plan проверяет, есть ли необработанные заметки, и при необходимости делает мини-триаж.
-
-- Проверь `DS-strategy/inbox/fleeting-notes.md` — есть ли **жирные** заметки
-- Если есть (≥1) — выполни мини-триаж inline:
-  1. Классифицируй каждую жирную заметку по 7 категориям: НЭП / Задача / Знание / Черновик / Идея 🔄 / Личные данные / Шум
-  2. Сверь с коммитами за вчера (шаг 1) — что уже сделано? (уже сделано → Шум)
-  3. Сформируй секцию `📋 Inbox Triage` со всеми корзинами (включая 📝 если есть зёрна для черновиков)
-  4. **НЕ** помечай заметки и **НЕ** архивируй — это делает только Note-Review
-- Также проверь конец текущего WeekPlan — есть ли секция «Предложения Note-Review» (рекомендации черновиков). Если есть — включи в секцию Inbox Triage DayPlan
-- Если жирных заметок нет и предложений нет — секцию не включать
-
-### 4. План на сегодня
-
-На основании **итогов вчера** + **обновлённого плана недели**:
-
-- **Carry-over из Day Close** (секция «Завтра начать с») → все РП в план без обрезки — это решение пользователя
-- Дополни из недельного плана: 2-4 фокусных РП (≥1h). Carry-over и mandatory не ограничивать
-- Учти дедлайны из WeekPlan и WORKPLAN.md репозиториев
-- Ограничь фокусные по дневному бюджету (4-6h)
-- Для каждого РП укажи: номер, название, бюджет, приоритет
-
-### 5. Рекомендация
-
-- Предложи с чего начать и почему
-- Укажи входные материалы (файлы, репо) для каждого РП
-- Если есть блокеры — предупреди
-
-### 6. Сохранение
-
-1. Если в `current/` есть предыдущий `DayPlan *.md`:
-   - Используй `git mv "current/DayPlan YYYY-MM-DD.md" "archive/day-plans/"` (атомарно стейджит удаление + добавление в archive)
-2. Создай новый файл: `current/DayPlan YYYY-MM-DD.md` (дата = сегодня)
-3. Закоммить ТОЛЬКО эти изменения: `git add current/ archive/day-plans/ && git commit`
-
-> **ЗАПРЕЩЕНО коммитить `inbox/fleeting-notes.md`!** Этот файл модифицируется sync-agent (каждые 2 мин) и Note-Review. Day-Plan его ЧИТАЕТ (шаг 3b), но НЕ изменяет и НЕ стейджит. Включение fleeting-notes.md в коммит приводит к rebase-конфликтам.
-
-**Шаблон DayPlan:**
-
-```markdown
+# Если файла нет — создать через scaffold (если доступен)
+if [ ! -f "$DAYPLAN_FILE" ]; then
+  _SCAFFOLD="$_IWE/scripts/day-open-scaffold.sh"
+  if [ -f "$_SCAFFOLD" ]; then
+    bash "$_SCAFFOLD" "$DATE" > "$DAYPLAN_FILE"
+    SCAFFOLD_EXIT=$?
+    if [ "$SCAFFOLD_EXIT" -eq 2 ]; then
+      rm -f "$DAYPLAN_FILE"
+      echo "Сегодня strategy_day, DayPlan не создаётся (план в WeekPlan)."
+      exit 0
+    fi
+  else
+    echo "WARN: day-open-scaffold.sh not found at $_IWE/scripts/ — создаю минимальный DayPlan, PENDING-маркеры заполнит LLM"
+    cat > "$DAYPLAN_FILE" <<FRONTMATTER
 ---
 type: daily-plan
-date: YYYY-MM-DD
-week: W{N}
+date: $DATE
 status: active
 agent: Стратег
+generated_by: fallback (scaffold missing)
 ---
-
-# Day Plan: DD месяца YYYY (День недели)
-
----
-
-## План на сегодня
-
-| 🚦 | # | РП | h | Статус | → R# |
-|----|---|-----|---|--------|------|
-| 🔴 | ... | ... | ... | pending | R{N} |
-
-**Бюджет дня:** ~Nh РП / ~Nh физ / Мультипликатор ~Nx
-
----
-
-## Рекомендация
-**Начать с:** #N ...
-**Почему:** ...
-
----
-
-## 📋 Inbox Triage (DD мес)
-
-> Источник: Note-Review (вчера) или мини-триаж (Day-Plan).
-> Секция включается ТОЛЬКО если есть заметки для разбора.
-
-### ✅ Архив (отработано)
-- ...
-
-### 📌 Предложения в РП
-- ...
-
-### ❓ На решение
-- ...
-
----
-
-## Итоги вчера (DD мес)
-[секция из шага 1]
-
----
-
-## Контекст недели W{N}
-**Прогресс:** X/Y РП done (N%)
-**Ключевые дедлайны:** [список]
-**Осталось:** ~Nh из Nh
-
----
-
-*Создан: YYYY-MM-DD (Day Plan)*
+FRONTMATTER
+  fi
+fi
 ```
 
-Результат: обновлённый WeekPlan + DayPlan в `current/` с итогами вчера и планом на сегодня.
+### Шаги 1-6 — заполнение PENDING-маркеров (LLM-синтез)
+
+**Прочитай созданный DayPlan**, найди ВСЕ `<!-- PENDING: ... -->` маркеры. Для каждого:
+
+1. **План на сегодня (today_plan)** — синтез из:
+   - `{{GOVERNANCE_REPO}}/current/WeekPlan W{N}.md` (текущий план недели)
+   - `{{GOVERNANCE_REPO}}/inbox/WP-*.md` (контекстные файлы РП с `status: active`)
+   - Carry-over из вчерашнего DayPlan (секция «Завтра начать с»)
+   - `day-rhythm-config.yaml → mandatory_daily_wps` (обязательные)
+   - Budget spread по дням до конца недели
+   Результат: таблица с 5-12 РП, бюджетом, приоритетами (🔴/🟡/🟢/⚪).
+
+2. **Итоги вчера** — `git log --since="yesterday 00:00" --until="today 00:00"` по ВСЕМ репо в `{{WORKSPACE_DIR}}/`:
+   - Группировка по репо
+   - Сопоставление коммитов с РП
+   - 1-3 ключевых результата (синтез)
+
+3. **Carry-over** — цитата секции «Завтра начать с» из `archive/day-plans/DayPlan {вчера}.md`. Если первый день — «нет».
+
+4. **Бюджет дня** — СТРОГИЙ формат для прохождения protocol-artifact-validate.sh hook:
+   ```
+   **Бюджет дня:** ~Xh РП / ~Yh физ / Плановый мультипликатор ~N.Nx
+   ```
+   - X = aggregate бюджет всех РП дня (одно число, не диапазон)
+   - Y = физическое время (одно число или диапазон 6-8 — ОК)
+   - N.N = мультипликатор как одно число `~2.75x` (НЕ диапазон `~2.5-3x` — hook fail)
+   - НЕ писать "aggregate" перед "РП" (hook regex ищет `~Xh РП`)
+
+5. **Mandatory check** — проверить наличие в плане: WP-7 (техдолг бота, ≥30 мин) + ≥1 контентный РП.
+
+5a. **Здоровье платформы (валидация формата)** — секция `<details><summary>Здоровье ...</summary>` ОБЯЗАНА содержать markdown-таблицу с **числовыми ячейками** ИЛИ явный текст «нет данных». Hook regex: `\| *[0-9]|нет данных`. Например:
+   ```markdown
+   | Метрика | Значение |
+   |---------|----------|
+   | Triage 7d | 0 |
+   | Open Issues | 0 |
+   ```
+   Светофор-таблица (`| Scheduler | 🟢 | ...`) **не проходит** валидацию (после pipe идёт буква, не цифра).
+
+6. **Inbox Triage** (если нужно):
+   - Прочитать `{{GOVERNANCE_REPO}}/inbox/fleeting-notes.md` — есть ли **жирные** заметки?
+   - Если есть — классифицировать по 7 категориям (НЭП / Задача / Знание / Черновик / Личные / Шум).
+   - НЕ помечать заметки и НЕ архивировать (это делает Note-Review в 23:00).
+
+### Шаг 7 — сохранение и коммит
+
+```bash
+cd "${IWE_WORKSPACE:-$HOME/IWE}/{{GOVERNANCE_REPO}}"
+git add current/DayPlan*.md
+git commit -m "day-plan: $DATE автономный полный (strategist morning)"
+git pull --rebase  # на случай если Mac тоже что-то закоммитил
+git push
+```
+
+## АВТОНОМНЫЙ РЕЖИМ (БЛОКИРУЮЩЕЕ)
+
+- ❌ **НЕ задавать вопросов** «что от меня нужно?» / «вариант A/B/C?»
+- ❌ **НЕ останавливаться** если файл DayPlan уже существует — заполни PENDING секции (не пересоздавай)
+- ❌ **НЕ просить подтверждения** — все решения по алгоритму
+- ✅ Все решения принимай по skill /day-open (`${IWE_WORKSPACE:-{{WORKSPACE_DIR}}}/.claude/skills/day-open/SKILL.md`)
+- ✅ Финал: SUCCESS + git push (Telegram-уведомление отправляет strategist.sh автоматически после завершения)
+
+## Источники (на сервере tsekh-1)
+
+- HUB: `{{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}}/current/`
+- SPOKES: `{{WORKSPACE_DIR}}/*/WORKPLAN.md`
+- MEMORY: `~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/`
+- Skill: `{{WORKSPACE_DIR}}/.claude/skills/day-open/SKILL.md`
+- Templates: `~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/templates-dayplan.md`
+- Scaffold: `{{WORKSPACE_DIR}}/scripts/day-open-scaffold.sh`
+- Extensions: `{{WORKSPACE_DIR}}/extensions/day-open.before.md`, `.after.md`, `.checks.md`
+
+## Если что-то отсутствует
+
+- Файлы или репо нет → log warning, продолжай с тем что есть. НЕ падай.
+- Calendar: на сервере его нет (Mac-only). Секцию пометь «Календарь недоступен на сервере».
+- Видео: если scaffold нашёл 0 файлов — секция «нет новых видео сегодня».
+
+Результат: DayPlan в `current/` с заполненными PENDING-секциями, закоммичен и запушен.

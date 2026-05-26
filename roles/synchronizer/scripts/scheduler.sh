@@ -1,7 +1,18 @@
 #!/bin/bash
-# scheduler.sh — центральный диспетчер агентов экзокортекса
+# scheduler.sh — ⚠️ LEGACY (отключён 10 марта 2026)
 #
-# Вызывается launchd (com.exocortex.scheduler) в нужные моменты.
+# Архитектура мигрировала с монолитного scheduler.sh на per-role launchd агенты:
+#   com.strategist.{morning,notereview,weekreview}
+#   com.exocortex.pomodoro-alert
+#   com.iwe.rule-classifier
+#   com.aisystant.profiler.recalculate
+#   com.pulse.{alerts,weekly}
+#   com.claude.env
+#
+# Plist `com.exocortex.scheduler.plist.disabled` в ~/Library/LaunchAgents/.
+# Скрипт оставлен для возможного ручного запуска (`scheduler.sh dispatch|status`),
+# но автоматически не запускается. Для нового кода — использовать per-role plists.
+#
 # Состояние: ~/.local/state/exocortex/ (маркеры запуска)
 #
 # Использование:
@@ -34,24 +45,41 @@ STATE_DIR="$HOME/.local/state/exocortex"
 LOG_DIR="$HOME/logs/synchronizer"
 LOG_FILE="$LOG_DIR/scheduler-$(date +%Y-%m-%d).log"
 
-ROLES_DIR="$(dirname "$SYNC_DIR")"
-NOTIFY_SH="$SCRIPT_DIR/notify.sh"
+# WP-273 R5 fix (Round 5 Евгения): substituted runners в .iwe-runtime/, но
+# role.yaml — read-only метаданные (не substituted, нет плейсхолдеров) — должны
+# браться из FMT через $IWE_TEMPLATE. notify.sh — также read-only.
+ROLES_DIR_RUNTIME="{{IWE_RUNTIME}}/roles"
+ROLES_DIR_TEMPLATE="${IWE_TEMPLATE:-$HOME/IWE/FMT-exocortex-template}/roles"
+# WP-273 0.29.3: silent degradation guard. Если IWE_TEMPLATE пуста — env неполная.
+if [ -z "${IWE_TEMPLATE:-}" ]; then
+    echo "[$(date '+%H:%M:%S')] WARN: \$IWE_TEMPLATE не задана, scheduler использует fallback $HOME/IWE/FMT-exocortex-template. source ~/.zshenv?" >&2
+fi
+ROLES_DIR="$ROLES_DIR_RUNTIME"  # backward-compat alias для downstream-логики
+# notify.sh — read-only, не substituted
+if [ -n "${IWE_TEMPLATE:-}" ] && [ -f "$IWE_TEMPLATE/roles/synchronizer/scripts/notify.sh" ]; then
+    NOTIFY_SH="$IWE_TEMPLATE/roles/synchronizer/scripts/notify.sh"
+elif [ -f "$HOME/IWE/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh" ]; then
+    NOTIFY_SH="$HOME/IWE/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh"
+else
+    NOTIFY_SH="$SCRIPT_DIR/notify.sh"  # legacy fallback
+fi
 
 # Таймаут на задачи (сек): предотвращает блокировку dispatch зависшей задачей
 TASK_TIMEOUT_SHORT=300    # 5 мин — bash-скрипты (code-scan, dt-collect, reindex)
 TASK_TIMEOUT_LONG=1800    # 30 мин — Claude CLI (strategist, scout, extractor)
 
-# Role runner discovery: reads runner path from role.yaml, fallback to convention
+# Role runner discovery: role.yaml — read-only из FMT (template), runner — substituted из runtime.
+# WP-273 R5: разделили location'ы — yaml из template, runner из runtime.
 get_role_runner() {
     local role="$1"
-    local yaml="$ROLES_DIR/$role/role.yaml"
+    local yaml="$ROLES_DIR_TEMPLATE/$role/role.yaml"
     if [ -f "$yaml" ]; then
         local runner
         runner=$(grep '^runner:' "$yaml" | sed 's/runner: *//' | tr -d '"' | tr -d "'")
-        [ -n "$runner" ] && echo "$ROLES_DIR/$role/$runner" && return
+        [ -n "$runner" ] && echo "$ROLES_DIR_RUNTIME/$role/$runner" && return
     fi
-    # Fallback: convention-based path
-    echo "$ROLES_DIR/$role/scripts/$role.sh"
+    # Fallback: convention-based path (substituted runner в runtime)
+    echo "$ROLES_DIR_RUNTIME/$role/scripts/$role.sh"
 }
 
 STRATEGIST_SH="$(get_role_runner strategist)"
@@ -130,48 +158,28 @@ cleanup_state() {
     find "$STATE_DIR" -name "*-202*" -mtime +7 -delete 2>/dev/null || true
 }
 
-# === Pre-archive: мгновенная очистка вчерашнего DayPlan (< 1 сек) ===
-# Разделяет архивацию (мгновенно) и генерацию (15+ мин Claude Code).
-# Гарантирует: даже если генерация ещё не началась, старый план не висит в current/.
-pre_archive_dayplan() {
-    local strategy_dir="/Users/elenadolgova/IWE/DS-strategy"
-    local archive_dir="$strategy_dir/archive/day-plans"
-    local moved=0
-
-    mkdir -p "$archive_dir"
-
-    for dayplan in "$strategy_dir/current"/DayPlan\ 20*.md; do
-        [ -f "$dayplan" ] || continue
-        local fname
-        fname=$(basename "$dayplan")
-        # Пропускаем сегодняшний план
-        if [[ "$fname" == *"$DATE"* ]]; then continue; fi
-        # Архивируем вчерашний (и любой более старый)
-        git -C "$strategy_dir" mv "$dayplan" "$archive_dir/" 2>/dev/null || mv "$dayplan" "$archive_dir/"
-        moved=$((moved + 1))
-        log "pre-archive: moved $fname → archive/day-plans/"
-    done
-
-    if [ "$moved" -gt 0 ]; then
-        git -C "$strategy_dir" pull --rebase 2>/dev/null || true
-        # ВАЖНО: добавляем ТОЛЬКО перемещённые файлы, не всю директорию.
-        # `git add current/` может подхватить грязные unstaged файлы (баг 21 мар 2026).
-        git -C "$strategy_dir" add -- archive/day-plans/ 2>/dev/null || true
-        git -C "$strategy_dir" add -u -- current/ 2>/dev/null || true
-        git -C "$strategy_dir" commit -m "chore: archive $moved old DayPlan(s)" 2>/dev/null || true
-        git -C "$strategy_dir" push 2>/dev/null || true
-        log "pre-archive: committed and pushed ($moved file(s))"
-    fi
-}
-
 # === Диспетчер ===
 
 dispatch() {
+    # WP-273 0.29.4 R6.5: self-reentrancy guard. Если предыдущий dispatch ещё работает
+    # (Claude CLI 30 мин), launchd может запустить следующий — двойной morning strategist.
+    # Используем flock на $STATE_DIR/scheduler.lock (non-blocking: новый dispatch выходит сразу).
+    if command -v flock >/dev/null 2>&1; then
+        exec 8>"$STATE_DIR/scheduler.lock"
+        if ! flock -n 8; then
+            log "SKIP: another scheduler dispatch уже работает (flock contended)"
+            return 0
+        fi
+    fi
+
+    # WP-273 0.29.4 R6.3: shared lock на runtime swap — ждём если build-runtime в процессе.
+    if command -v flock >/dev/null 2>&1 && [ -f "${IWE_WORKSPACE:-$HOME/IWE}/.iwe-runtime.lock" ]; then
+        exec 7>"${IWE_WORKSPACE:-$HOME/IWE}/.iwe-runtime.lock"
+        flock -s -w 5 7 2>/dev/null || log "WARN: runtime lock contended >5s — proceeding (read paths могут быть устаревшими)"
+    fi
+
     log "dispatch started (hour=$HOUR, dow=$DOW)"
     local ran=0
-
-    # --- Pre-archive: убрать вчерашний DayPlan ДО генерации нового ---
-    pre_archive_dayplan
 
     # --- AC sleep check (macOS): на зарядке Mac не должен засыпать ---
     if [[ "$(uname)" == "Darwin" ]] && ! ran_today "pmset-check"; then
@@ -240,14 +248,20 @@ dispatch() {
     fi
 
     # --- Синхронизатор: dt-collect (после code-scan) ---
+    # AUTHOR-ONLY: требует NEON_URL + DT_USER_ID в ~/.config/aist/env (секреты автора
+    # шаблона). Пользовательский путь — через event-gateway, фаза в WP-253 роадмапе.
     if ! ran_today "synchronizer-dt-collect"; then
-        log "→ synchronizer dt-collect (hour=$HOUR)"
-        if timeout "$TASK_TIMEOUT_SHORT" "$SCRIPT_DIR/dt-collect.sh" >> "$LOG_FILE" 2>&1; then
-            mark_done "synchronizer-dt-collect"
-        else
-            log "WARN: dt-collect failed (will retry next dispatch)"
+        if [ -f "$HOME/.config/aist/env" ] && grep -qE '^NEON_URL=' "$HOME/.config/aist/env" \
+           && grep -qE '^DT_USER_ID=' "$HOME/.config/aist/env"; then
+            log "→ synchronizer dt-collect (hour=$HOUR)"
+            if timeout "$TASK_TIMEOUT_SHORT" "$SCRIPT_DIR/dt-collect.sh" >> "$LOG_FILE" 2>&1; then
+                mark_done "synchronizer-dt-collect"
+            else
+                log "WARN: dt-collect failed (will retry next dispatch)"
+            fi
+            ran=1
         fi
-        ran=1
+        # Если env отсутствует — молча пропускаем (author-only, у пользователей нет секретов).
     fi
 
     # --- Синхронизатор: daily-report (после code-scan и strategist morning) ---

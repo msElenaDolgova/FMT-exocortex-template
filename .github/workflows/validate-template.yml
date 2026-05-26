@@ -1,5 +1,8 @@
 name: Validate Template
 
+# see VR.SC.006 (release-verification-protocol), VR.M.006 (5-layer verification)
+# see AR.203 (release verification trigger)
+
 on:
   push:
     branches: [main]
@@ -7,6 +10,120 @@ on:
     branches: [main]
 
 jobs:
+  # Defense-in-depth для случая --no-verify в pre-commit + прямого push.
+  # Отдельный job, чтобы шёл независимо от validate/shellcheck (не зависит от их успеха).
+  release-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check CHANGELOG/manifest version sync
+        run: |
+          if [ ! -f "CHANGELOG.md" ] || [ ! -f "update-manifest.json" ]; then
+            echo "SKIP: CHANGELOG.md или update-manifest.json не найдены"
+            exit 0
+          fi
+          CHANGELOG_VERSION=$(grep -m1 -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md \
+              | sed 's/^## \[//;s/\]$//' || true)
+          MANIFEST_VERSION=$(grep -m1 '"version"' update-manifest.json \
+              | sed 's/.*"version"[[:space:]]*:[[:space:]]*"//;s/".*//' || true)
+          if [ -z "$CHANGELOG_VERSION" ] || [ -z "$MANIFEST_VERSION" ]; then
+            echo "FAIL: не удалось извлечь версии (CHANGELOG=$CHANGELOG_VERSION, manifest=$MANIFEST_VERSION)"
+            exit 1
+          fi
+          if [ "$CHANGELOG_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "FAIL: рассинхрон версий!"
+            echo "  CHANGELOG.md top:     $CHANGELOG_VERSION"
+            echo "  update-manifest.json: $MANIFEST_VERSION"
+            echo "  update.sh --check парсит manifest — пользователи не получат обновлений."
+            echo "  Fix: bump version в update-manifest.json до $CHANGELOG_VERSION"
+            exit 1
+          fi
+          echo "PASS: CHANGELOG/manifest version sync ($CHANGELOG_VERSION)"
+
+  # Integration contract validator + fresh-install smoke-test.
+  # Defense-in-depth для случая `git commit --no-verify` в pre-commit.
+  # Корень бага (29 апр, 0.29.13 регрессия): template-sync пропихнул pre-0.29.5
+  # код в FMT, валидаторы НЕ были в CI — Євгений нашёл на fresh clone, у нас
+  # commit прошёл. Гейт: те же 2 скрипта что Євгений запускает локально.
+  integration-contract:
+    # OS matrix (0.29.18): пилоты на macOS И Linux. CI на ubuntu-latest пропускал
+    # портабельность-баги (0.28.12 BUG-2..4 на Linux). Прогон на обеих ОС.
+    # GOVERNANCE_REPO matrix (12 мая, после Bug 1 b24639f): smoke прогоняется с
+    # разными значениями GOVERNANCE_REPO, чтобы поймать hardcoded /DS-strategy/
+    # пути которые проходят при дефолтном значении.
+    # NB: validator+test-detectors дублируются 2× по gov_repo (4 прогона вместо 2)
+    # — не зависят от gov_repo, но изоляция в отдельный job усложнила бы yml.
+    # Trade-off приемлемый: оба скрипта быстрые (<10 сек суммарно).
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        gov_repo: [DS-strategy, DS-pilot-strategy]
+    runs-on: ${{ matrix.os }}
+    env:
+      SMOKE_GOVERNANCE_REPO: ${{ matrix.gov_repo }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y python3 jq
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install jq  # python3 preinstalled
+      - name: Run integration-contract-validator (8 detectors)
+        run: bash setup/integration-contract-validator.sh
+      - name: Run smoke-test-fresh-install (GOVERNANCE_REPO=${{ matrix.gov_repo }})
+        run: bash setup/smoke-test-fresh-install.sh
+      - name: Run detector regression fixtures (regex gap guard)
+        run: bash setup/test-detectors.sh
+
+  # Upgrade-flow regression test (0.29.18).
+  # Корень бага (0.29.13): template-sync перезаписал FMT файлы — smoke-test fresh
+  # build не ловит это, потому что build-runtime создаёт `.iwe-runtime` с нуля,
+  # а пилот делает upgrade поверх существующего состояния. Этот job симулирует:
+  # checkout previous version → setup → checkout HEAD → re-run validator.
+  upgrade-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history для git log
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y python3 jq
+      - name: Determine previous version
+        id: prev
+        run: |
+          # Найти предыдущий коммит, поднявший version в update-manifest.json.
+          # Логика: git log -p update-manifest.json → найти второй "version" bump
+          # → его commit hash. Это предыдущая опубликованная версия.
+          PREV_SHA=$(git log --format=%H -- update-manifest.json | sed -n '2p')
+          if [ -z "$PREV_SHA" ]; then
+            echo "SKIP: нет предыдущей версии в истории update-manifest.json"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          PREV_VER=$(git show "$PREV_SHA:update-manifest.json" 2>/dev/null \
+            | grep -m1 '"version"' | sed 's/.*"version"[[:space:]]*:[[:space:]]*"//;s/".*//')
+          echo "PREVIOUS: $PREV_VER ($PREV_SHA)"
+          echo "sha=$PREV_SHA" >> $GITHUB_OUTPUT
+          echo "ver=$PREV_VER" >> $GITHUB_OUTPUT
+          echo "skip=false" >> $GITHUB_OUTPUT
+      - name: Upgrade simulation — checkout prev → smoke → checkout HEAD → validate
+        if: steps.prev.outputs.skip != 'true'
+        run: |
+          # Шаг 1: build-runtime на предыдущей версии (имитация уже-установленного пилота).
+          git checkout ${{ steps.prev.outputs.sha }}
+          bash setup/smoke-test-fresh-install.sh > /tmp/prev_smoke.log 2>&1 || {
+            echo "WARN: previous version smoke-test FAILED (это OK — мы тестируем upgrade-flow)"
+            tail -20 /tmp/prev_smoke.log
+          }
+          # Шаг 2: возврат на HEAD, прогон ТЕКУЩЕГО validator + smoke.
+          # Если HEAD-validator прошёл fresh + после prev-smoke build-runtime — upgrade OK.
+          git checkout -
+          bash setup/integration-contract-validator.sh
+          bash setup/smoke-test-fresh-install.sh
+          echo "PASS: upgrade ${{ steps.prev.outputs.ver }} → HEAD не ломает контракт"
+
   shellcheck:
     runs-on: ubuntu-latest
     steps:
@@ -34,141 +151,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. Нет автор-специфичного контента
-      # Патерны делятся на глобальные (запрет везде) и "protocol-only" (запрет в скиллах/
-      # хуках/шаблонах/скриптах, но разрешено в README/onboarding/docs/CHANGELOG как продукт).
-      - name: Check for author-specific content
-        run: |
-          FAIL=0
+      # C1 fix (0.28.6): CI source-of-truth = local validator (setup/validate-template.sh).
+      # Раньше CI имел собственный inline blacklist, который расходился с local — например,
+      # PROTOCOL_PATHS включал `roles/`, что ловило conditional refs в strategist prompts.
+      # Теперь CI делегирует author-specific / hardcoded-paths / MEMORY-skeleton / required-files /
+      # hooks-cross-ref в local validator; CI-only остаются: smoke-test, MCP doc, placeholders.
+      - name: Run local validator (source-of-truth)
+        run: bash setup/validate-template.sh "$PWD"
 
-          # Глобальные — автор-только имена и приватные репо. Запрещены везде.
-          # Исключения: CHANGELOG.md (история промоций) + сами валидаторы (self-reference).
-          for pattern in "tserentserenov" "PACK-MIM" "aist_bot_newarchitecture" \
-                         "DS-Knowledge-Index-Tseren" "DS-my-strategy" \
-                         "engines/tailor"; do
-            count=$(grep -rn "$pattern" . --include="*.md" --include="*.sh" \
-                    --include="*.py" --include="*.json" --include="*.plist" \
-                    --include="*.yaml" --include="*.yml" \
-                    --exclude='validate-template.yml' \
-                    --exclude='validate-template.sh' 2>/dev/null \
-                    | grep -v 'CHANGELOG.md' \
-                    | wc -l)
-            if [ "$count" -gt 0 ]; then
-              echo "FAIL: Found '$pattern' in $count locations:"
-              grep -rn "$pattern" . --include="*.md" --include="*.sh" \
-                  --include="*.py" --include="*.json" --include="*.plist" \
-                  --include="*.yaml" --include="*.yml" \
-                  --exclude='validate-template.yml' \
-                  --exclude='validate-template.sh' 2>/dev/null \
-                  | grep -v 'CHANGELOG.md' | head -5
-              FAIL=1
-            fi
-          done
+      # validate-fmt-scripts: проверка на личные хардкоды и нарушения конвенций.
+      # Корень бага (май 2026): detector ловил legitimate uses (template identity,
+      # python fallback, env override) как false positives. Исправлено в validate-fmt-scripts.sh.
+      # Гейт: прогоняем в CI, чтобы не полагаться только на pre-commit (который зовётся
+      # только при staged .claude/settings.json) и ручной запуск.
+      - name: Run validate-fmt-scripts (author-specific hardcodes & conventions)
+        run: bash scripts/validate-fmt-scripts.sh
 
-          # Protocol-only — имена продуктовых сервисов автора. Разрешены в README/docs/onboarding/
-          # (как упоминание продукта), запрещены в протоколах/скиллах/хуках/шаблонах планов/CLAUDE.md/ролях.
-          PROTOCOL_PATHS=".claude/skills .claude/hooks .claude/rules memory CLAUDE.md roles"
-          for pattern in "@aist_me_bot" "digital-twin" "content-pipeline" \
-                         "knowledge-mcp" "gateway-mcp" "DS-agent-workspace/scheduler"; do
-            # shellcheck disable=SC2086
-            count=$(grep -rn "$pattern" $PROTOCOL_PATHS 2>/dev/null \
-                    | grep -v 'CHANGELOG.md' \
-                    | grep -v 'README.md' \
-                    | wc -l)
-            if [ "$count" -gt 0 ]; then
-              echo "FAIL: Found '$pattern' in protocol-space ($count locations — OK в README/docs, не в скиллах/хуках/шаблонах):"
-              # shellcheck disable=SC2086
-              grep -rn "$pattern" $PROTOCOL_PATHS 2>/dev/null | head -5
-              FAIL=1
-            fi
-          done
-
-          [ "$FAIL" -eq 0 ] && echo "PASS: No author-specific content"
-          exit $FAIL
-
-      # 2. Нет захардкоженных /Users/ и /opt/homebrew путей
-      # Исключения зеркалят setup/validate-template.sh (локальный валидатор):
-      #   /Users/  — validate-template.{yml,sh}, setup.sh (примеры), /Users/.../ placeholder, комментарии-примеры
-      #   /opt/homebrew — README, PLATFORM-COMPAT.md, validate-template.{yml,sh}, setup.sh, plist PATH
-      - name: Check for hardcoded paths
-        run: |
-          FAIL=0
-          count=$(grep -rn '/Users/' . --include="*.md" --include="*.sh" \
-                  --include="*.json" --include="*.plist" \
-                  --exclude='validate-template.yml' \
-                  --exclude='validate-template.sh' \
-                  --exclude='setup.sh' 2>/dev/null \
-                  | grep -v '/Users/\.\.\./' \
-                  | grep -v '# .*\(/Users/\|e\.g\.\)' \
-                  | wc -l)
-          if [ "$count" -gt 0 ]; then
-            echo "FAIL: Found /Users/ in $count locations:"
-            grep -rn '/Users/' . --include="*.md" --include="*.sh" \
-                --exclude='validate-template.yml' \
-                --exclude='validate-template.sh' \
-                --exclude='setup.sh' 2>/dev/null \
-                | grep -v '/Users/\.\.\./' \
-                | grep -v '# .*\(/Users/\|e\.g\.\)' | head -5
-            FAIL=1
-          fi
-
-          count=$(grep -rn '/opt/homebrew' . --include="*.md" --include="*.sh" \
-                  --include="*.json" --include="*.plist" \
-                  --exclude='validate-template.yml' \
-                  --exclude='validate-template.sh' \
-                  --exclude='setup.sh' 2>/dev/null \
-                  | grep -v 'README.md' \
-                  | grep -v 'PLATFORM-COMPAT.md' \
-                  | grep -v '/usr/local/bin.*:/opt/homebrew' \
-                  | wc -l)
-          if [ "$count" -gt 0 ]; then
-            echo "FAIL: Found /opt/homebrew in $count locations:"
-            grep -rn '/opt/homebrew' . --include="*.md" --include="*.sh" \
-                --exclude='validate-template.yml' \
-                --exclude='validate-template.sh' \
-                --exclude='setup.sh' 2>/dev/null \
-                | grep -v 'README.md' | grep -v 'PLATFORM-COMPAT.md' | head -5
-            FAIL=1
-          fi
-
-          [ "$FAIL" -eq 0 ] && echo "PASS: No hardcoded paths"
-          exit $FAIL
-
-      # 3. MEMORY.md — скелет
-      - name: Check MEMORY.md is skeleton
-        run: |
-          if [ -f "memory/MEMORY.md" ]; then
-            rows=$(grep -c '^|' memory/MEMORY.md 2>/dev/null || echo 0)
-            if [ "$rows" -gt 15 ]; then
-              echo "FAIL: MEMORY.md has $rows table rows (expected ≤15)"
-              exit 1
-            fi
-            echo "PASS: MEMORY.md is skeleton ($rows rows)"
-          else
-            echo "WARN: memory/MEMORY.md not found"
-          fi
-
-      # 4. Обязательные файлы
-      - name: Check required files
-        run: |
-          FAIL=0
-          for f in CLAUDE.md ONTOLOGY.md README.md \
-                   memory/MEMORY.md memory/hard-distinctions.md \
-                   memory/roles.md \
-                   roles/strategist/scripts/strategist.sh; do
-            if [ ! -f "$f" ]; then
-              echo "MISSING: $f"
-              FAIL=1
-            fi
-          done
-          [ "$FAIL" -eq 0 ] && echo "PASS: All required files present"
-          exit $FAIL
-
-      # 5. MCP — серверы подключаются через claude.ai/settings/connectors (не локально)
+      # CI-only check: MCP — серверы подключаются через claude.ai/settings/connectors
       - name: Check MCP documentation
         run: |
-          # MCP Gateway (iwe-knowledge at mcp.aisystant.com/mcp) is managed through claude.ai connectors
-          # Validate that setup.sh contains instructions for users
           if grep -q "claude.ai/settings/connectors" setup.sh; then
             echo "PASS: setup.sh contains MCP connector instructions"
           else
@@ -245,6 +246,13 @@ jobs:
 
           rm -rf "$TMP"
           exit $FAIL
+
+      # B2 gap closure: проверяем что все файлы репо покрыты update-manifest.json.
+      # Новый файл без записи в manifest = обновление не доедет до пользователей.
+      # Исправление: добавить в manifest["files"] или manifest["excluded_paths"].
+      - name: Check manifest completeness (B2)
+        run: |
+          git ls-files | python3 scripts/check-manifest-coverage.py update-manifest.json
 
       # 7. Только допустимые placeholders
       - name: Check placeholders are valid

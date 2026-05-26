@@ -14,11 +14,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$HOME/.local/state/exocortex"
-LOG_DIR="/Users/elenadolgova/logs/synchronizer"
-STRATEGY_DIR="/Users/elenadolgova/IWE/DS-strategy"
+LOG_DIR="{{HOME_DIR}}/logs/synchronizer"
+STRATEGY_DIR="{{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}}"
 
 # Agent Workspace: если существует — отчёты идут туда
-AGENT_WORKSPACE="/Users/elenadolgova/IWE/DS-agent-workspace"
+AGENT_WORKSPACE="{{WORKSPACE_DIR}}/DS-agent-workspace"
 if [ -d "$AGENT_WORKSPACE/.git" ]; then
     REPORT_DIR="$AGENT_WORKSPACE/scheduler/reports"
     ARCHIVE_DIR="$AGENT_WORKSPACE/scheduler/reports/archive"
@@ -41,7 +41,7 @@ DRY_RUN=false
 
 REPORT_FILE="$REPORT_DIR/SchedulerReport $DATE.md"
 SCHEDULER_LOG="$LOG_DIR/scheduler-$DATE.log"
-STRATEGIST_LOG="/Users/elenadolgova/logs/strategist/$DATE.log"
+STRATEGIST_LOG="{{HOME_DIR}}/logs/strategist/$DATE.log"
 
 mkdir -p "$ARCHIVE_DIR"
 
@@ -225,7 +225,7 @@ $warnings
 **Что делать:**
 "
         if echo "$warnings" | grep -q "push failed" 2>/dev/null; then
-            report+="- **push failed:** Mac был оффлайн. Запусти \`cd /Users/elenadolgova/IWE/DS-strategy && git pull --rebase && git push\`
+            report+="- **push failed:** Mac был оффлайн. Запусти \`cd {{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}} && git pull --rebase && git push\`
 "
         fi
     else
@@ -238,6 +238,7 @@ $warnings
 }
 
 archive_old_reports() {
+    mkdir -p "$ARCHIVE_DIR"
     local count=0
     for old_report in "$REPORT_DIR"/SchedulerReport\ 20*.md; do
         [ -f "$old_report" ] || continue

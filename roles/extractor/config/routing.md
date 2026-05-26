@@ -8,13 +8,15 @@
 
 ## 1. Pack-репо по домену
 
-| Домен | Pack | Префикс | Путь к docs/ |
+> Добавь свои Pack'и в эту таблицу. Пример:
+
+| Домен | Pack | Префикс | Путь |
 |-------|------|---------|------|
-| Саморазвитие, практики, мышление | Pack-self-development | PSD | /Users/elenadolgova/IWE/Pack-self-development/docs/ |
-| Теплица, растения, почва, микроклимат | Pack-garden | PG | /Users/elenadolgova/IWE/Pack-garden/docs/ |
-| Инвестиции, риски, рынки | Pack-investment | PI | /Users/elenadolgova/IWE/Pack-investment/docs/ |
-| Лидерство, менеджмент, руководство | Pack-leadership | PL | /Users/elenadolgova/IWE/Pack-leadership/docs/ |
-| Программирование, инженерия, архитектура | Pack-software-engineering | PSE | /Users/elenadolgova/IWE/Pack-software-engineering/docs/ |
+| _Твой домен (напр. Machine Learning)_ | _PACK-my-domain_ | _MD_ | _{{WORKSPACE_DIR}}/PACK-my-domain/pack/my-domain/_ |
+
+<!-- Удали пример выше и добавь свои Pack'и. Формат:
+| Домен (ключевые слова) | Имя Pack-репо | Короткий префикс (2-3 буквы) | Путь к pack/ директории |
+-->
 
 ## 2. Директории по типу знания
 
@@ -27,7 +29,7 @@
 | Failure mode | `fm` | `05-failure-modes/` | Отдельный файл |
 | Характеристика | `chr` | `06-characteristics/` | Отдельный файл |
 | SoTA-аннотация | `sota` | `08-sota/` | Отдельный файл |
-| Правило (глобальное) | `rule` | `/Users/elenadolgova/IWE/CLAUDE.md` | Строки |
+| Правило (глобальное) | `rule` | `{{WORKSPACE_DIR}}/CLAUDE.md` | Строки |
 | Правило (локальное) | `rule` | `<repo>/CLAUDE.md` | Строки |
 | Правило (урок) | `rule` | `memory/<topic>.md` | Строки |
 
@@ -70,7 +72,7 @@
 
 | Система | DS-репо | Путь к docs/ |
 |---------|--------|-------------|
-| _Мой бот_ | _your-org/my-bot_ | _/Users/elenadolgova/IWE/your-org/my-bot/docs/_ |
+| _Мой бот_ | _your-org/my-bot_ | _{{WORKSPACE_DIR}}/your-org/my-bot/docs/_ |
 
 <!-- Удали пример и добавь свои DS-репо -->
 

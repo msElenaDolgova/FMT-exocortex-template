@@ -1,6 +1,16 @@
 ---
 valid_from: 2026-04-06
 originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
+
+type: reference
+horizon: warm
+domains: [reference]
+status: active
+owner: user
+schema_version: 1
+
+name: "roles"
+description: "Операционный файл памяти IWE"
 ---
 # Роли платформы (lookup)
 
@@ -9,32 +19,35 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 
 ## Каталог ролей (ИИ)
 
-| ID | Роль | FX | Типичные задачи |
-|----|------|-----|----------------|
-| R1 | **Стратег** | — | План дня/недели, сессия стратегирования, ревью, note-review |
-| R2 | **Экстрактор** | — | KE в Pack, inbox check, ontology sync |
-| R3 | **Консультант** | — | Q&A ученика, проверка ДЗ, генерация контента ленты/марафона |
-| R4 | **Автор** | FX1 | Посты, презентации, питчи, описания |
-| R5 | **Архитектор** | FX5 | ArchGate, ADR, BC-mapping, SOTA-update |
-| R6 | **Кодировщик** | FX5, FX8 | Код, рефакторинг, баг-фикс |
-| R7 | **Триажёр** | — | Auto-triage feedback, triage-session |
-| R8 | **Синхронизатор** | — | Scheduler, code-scan, pack projection, notify |
-| R9 | **Шаблонизатор** | FX8 | Template sync, drift detection, validation |
-| R10 | **Статистик** | — | Метрики, аналитика, time tracking |
-| R11 | **Наладчик** | — | FSM unstick, auto-fix, restart, escalate |
-| R12 | **Оценщик** | — | Bloom eval, WP validation, fixation |
-| R13 | **Проводник** | FX6 | FSM routing, tier gating, progressive disclosure |
-| R21 | **Публикатор** | FX1 | Scan ready posts, scheduled publish, comment check |
-| R23 | **Верификатор** | — | Проверка артефактов по эталону (Pack/SPF). `/verify`. Context isolation |
-| R24 | **Аудитор** | — | Проверка полноты и согласованности (coverage, кросс-контекст) |
-| R27 | **Навигатор** | — | Траектория развития, выбор программы, ритм обучения, мемы, итоги |
-| R28 | **Диагност** | — | Определение ступени мастерства (0-4) и bottleneck через диалог |
+> **Исполнитель** = механизм реализации: `скилл` (есть `/команда`), `скрипт` (bash/Python, cron), `sub-agent` (Task tool + context isolation), `inline` (Claude в диалоге). `*` = внешний скилл (FleetView).
+
+| ID | Роль | FX | Исполнитель | Скилл | Типичные задачи |
+|----|------|-----|-------------|-------|----------------|
+| R1 | **Стратег** | — | скилл | `/day-open` `/day-close` `/week-close` `/month-close` `/strategy-session` `/wp-new` `/run-protocol` | План дня/недели, сессия стратегирования, ревью, note-review |
+| R2 | **Экстрактор** | — | скилл | `/ke` `/apply-captures` | KE в Pack, inbox check, ontology sync |
+| R3 | **Консультант** | — | inline | — | Q&A ученика, проверка ДЗ, генерация контента ленты/марафона |
+| R4 | **Автор** | FX1 | inline | — | Посты, презентации, питчи, описания |
+| R5 | **Архитектор** | FX5 | скилл + inline | `/archgate` `/think` `/fpf` | ArchGate, ADR, BC-mapping, SOTA-update |
+| R6 | **Кодировщик** | FX5, FX8 | inline + скилл | `/transcribe` `/simplify`* `/claude-api`* `/review`* | Код, рефакторинг, баг-фикс |
+| R7 | **Триажёр** | — | скилл | `/iwe-bug-report` | Auto-triage feedback, triage-session |
+| R8 | **Синхронизатор** | — | скрипт + скилл | `/connect-guide` `/setup-wakatime` `/loop`* `/schedule`* | Scheduler, code-scan, pack projection, notify |
+| R9 | **Шаблонизатор** | FX8 | скилл | `/iwe-update` `/extend` `/init`* `/update-config`* `/keybindings-help`* `/fewer-permission-prompts`* | Template sync, drift detection, validation |
+| R10 | **Статистик** | — | скрипт | — | Метрики, аналитика, time tracking |
+| R11 | **Наладчик** | — | inline | — | FSM unstick, auto-fix, restart, escalate |
+| R12 | **Оценщик** | — | sub-agent | — | Bloom eval, WP validation, fixation |
+| R13 | **Проводник** | FX6 | скилл + скрипт | `/consent` | FSM routing, tier gating, progressive disclosure |
+| R21 | **Публикатор** | FX1 | скрипт | — | Scan ready posts, scheduled publish, comment check |
+| R23 | **Верификатор** | — | sub-agent | `/verify` | Проверка артефактов по эталону (Pack/SPF). Context isolation |
+| R24 | **Аудитор** | — | sub-agent + скилл | `/audit-installation` `/audit-docs` `/iwe-rules-review` `/check-secret` `/security-review`* | Проверка полноты и согласованности (coverage, кросс-контекст) |
+| R27 | **Навигатор** | — | скилл | `/lesson` `/lesson-close` `/personal-guide-start` `/personal-guide-render` `/week-close-pilot` `/w-reflection` | Траектория развития, выбор программы, ритм обучения, мемы, итоги |
+| R28 | **Диагност** | — | inline | — | Определение ступени мастерства (0-4) и bottleneck через диалог |
+| R29 | **Артефактор** | — | скилл | `/artifactor` | Этапная декомпозиция деятельности, материальные I/O, чеклист приёмки, детектор разрывов |
 
 ## Проектные подроли (S2R матрица 3×3)
 
 > Source-of-truth: `FMT-s2r/0.OPS/0.3.Roles-Matrix-3x3/roles-matrix.md`.
 > Здесь — компактная шпаргалка. Суб-роли — из `DS-ecosystem-development` (структура папок X.Y.Z).
-> FX = контекст деятельности («шляпа»). Агент (R-роль) = исполнитель, назначенный на FX.
+> FX = контекст деятельности («шляпа»). Роль (R-N) исполняется носителем (LLM-агент / человек / скрипт) в рамках FX.
 
 | FX | Подроль | Система × Измерение | Функциональные суб-роли |
 |----|---------|---------------------|------------------------|
@@ -48,15 +61,15 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 | FX8 | Организатор разработки | Создание × Architecture | — (подсистемы и ADR, не роли) |
 | FX9 | Администратор | Создание × Operations | HR/Команда, Сервис-менеджер, Комьюнити-менеджер, Ops-менеджер |
 
-## Агенты (исполнители)
+## Роли с типичным носителем
 
-> Тип: Чел. = человек, ИИ = Claude/агент, Скр. = скрипт/автоматизация.
+> Колонка «Носитель»: Чел. = человек, ИИ = LLM-агент (Claude), Скр. = скрипт/автоматизация. Это **типичный** носитель — роль переносима между реализациями (D.141 PD).
 > FX = в каких проектных подролях участвует.
 
-| ID | Агент | Тип | FX | Что делает |
-|----|-------|-----|----|-----------|
+| ID | Роль | Носитель | FX | Что делает |
+|----|------|----------|----|-----------|
 | R14 | Заказчик | Чел. | — | Формулирует задачи для Claude |
-| R15 | Валидатор | Чел. | — | Human-in-the-loop: одобряет KE, решения, PR |
+| R15 | Валидатор | Чел. | — | Human-in-the-loop: одобряет KE, решения, PR (`/apply-captures` skill) |
 | R16 | Ученик | Чел. | — | Учится в боте (марафон/лента) |
 | R17 | Стратег (интерактив) | Чел. | — | Участвует в strategy-session |
 | R18 | Автор заметок | Чел. | — | Пишет .заметки в TG → fleeting-notes |
@@ -66,7 +79,6 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 | R25 | Рецензент-верификатор | Чел. | — | Экспертная оценка содержания (ИИ Opus или человек) |
 | R26 | Приёмщик | Чел. | — | Решение pass/fail на основе verdict (обычно = R15 Валидатор) |
 
----
 
 ## Специфика: R4 Автор — презентации (МИМ)
 
