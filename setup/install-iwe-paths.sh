@@ -49,6 +49,17 @@ fi
 WORKSPACE_DIR="${WORKSPACE_DIR/#\~/$HOME}"
 GOVERNANCE_REPO="${GOVERNANCE_REPO:-DS-strategy}"
 
+# Template clone dir name: derive from per-installation .exocortex.env (source of truth);
+# fallback to standard FMT-exocortex-template clone name. Fixes installs where the template
+# is cloned under a non-default name (e.g. author setup: DS-exocortex). Без этого ~/.iwe-paths
+# хардкодил FMT-exocortex-template и PROMPTS_DIR-резолв падал в legacy (Session-Close Feeder сломан).
+TEMPLATE_NAME="FMT-exocortex-template"
+_EXO_ENV="$WORKSPACE_DIR/.exocortex.env"
+if [ -f "$_EXO_ENV" ]; then
+    _tpl=$(grep -E '^IWE_TEMPLATE=' "$_EXO_ENV" | head -1 | cut -d= -f2- | tr -d '"')
+    [ -n "${_tpl:-}" ] && TEMPLATE_NAME="$(basename "$_tpl")"
+fi
+
 IWE_ENV_FILE="$HOME/.iwe-paths"
 ZSHENV_FILE="$HOME/.zshenv"
 IWE_ENV_MARKER="# IWE environment (WP-219, DP.FM.009): lookup-слой для путей к скриптам"
@@ -65,7 +76,7 @@ cat > "$IWE_ENV_FILE" <<IWEENV_EOF
 # Do not edit manually — changes will be lost.
 
 export IWE_WORKSPACE="$WORKSPACE_DIR"
-export IWE_TEMPLATE="\$IWE_WORKSPACE/FMT-exocortex-template"
+export IWE_TEMPLATE="\$IWE_WORKSPACE/$TEMPLATE_NAME"
 export IWE_SCRIPTS="\$IWE_TEMPLATE/scripts"
 export IWE_ROLES="\$IWE_TEMPLATE/roles"
 export IWE_RUNTIME="\$IWE_WORKSPACE/.iwe-runtime"

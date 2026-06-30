@@ -236,7 +236,7 @@ PYEOF
 
 ## Шаг 4 — Формирование отчёта
 
-Создай файл `DS-strategy/current/BabyRhythm-W{N}-YYYY-MM-DD.md` (N = номер ISO-недели, дата = сегодня):
+Создай файл `{{GOVERNANCE_REPO}}/current/BabyRhythm-W{N}-YYYY-MM-DD.md` (N = номер ISO-недели, дата = сегодня):
 
 ```markdown
 ---
@@ -286,7 +286,7 @@ agent: Стратег
 
 ## Шаг 5 — Сохранение
 
-1. Сохрани отчёт в `DS-strategy/current/BabyRhythm-W{N}-YYYY-MM-DD.md`
+1. Сохрани отчёт в `{{GOVERNANCE_REPO}}/current/BabyRhythm-W{N}-YYYY-MM-DD.md`
 2. Закоммить: `git add current/ && git commit -m "feat: baby rhythm review W{N}"`
 
 **Формат интерпретации:** Конкретные наблюдения (факты), без общих фраз. Если данных мало (< 5 событий типа) — указать «данных недостаточно» и не делать выводы.

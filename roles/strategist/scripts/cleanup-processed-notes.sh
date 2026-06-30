@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-WORKSPACE="/Users/elenadolgova/IWE/DS-strategy"
+WORKSPACE="${IWE_WORKSPACE:-$HOME/IWE}/${IWE_GOVERNANCE_REPO:-DS-strategy}"
 FLEETING="${WORKSPACE}/inbox/fleeting-notes.md"
 ARCHIVE="${WORKSPACE}/archive/notes/Notes-Archive.md"
 TODAY=$(date +%Y-%m-%d)
