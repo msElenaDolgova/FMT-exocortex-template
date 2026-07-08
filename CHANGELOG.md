@@ -102,6 +102,18 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - `e337183` fix(manifest): remove strategist prompts from deprecated_files — runner still uses them
 
 
+## [0.34.2] — 2026-07-08
+
+### Fixed
+
+- fix(update.sh): #229 repair-pass и memory copy loop пропускают файлы с `owner: user` во frontmatter — пользовательский контент больше не затирается при `update.sh`
+- fix(update.sh): #228 HOT-бюджет валидатор предупреждает при превышении 150 строк в `horizon: hot` файлах
+
+### Added
+
+- `.claude/lib/frontmatter.sh` — shared `get_field()` для чтения scalar-полей из YAML frontmatter
+
+
 ## [0.34.1] — 2026-05-21
 
 ### Fixed

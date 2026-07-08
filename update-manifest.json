@@ -1,5 +1,5 @@
 {
-  "version": "0.34.1",
+  "version": "0.34.2",
   "description": "Манифест платформенных файлов FMT-exocortex-template. Используется update.sh для доставки обновлений.",
   "files": [
     {
@@ -70,6 +70,9 @@
     },
     {
       "path": ".claude/lib/log_formatter.sh"
+    },
+    {
+      "path": ".claude/lib/frontmatter.sh"
     },
     {
       "path": ".claude/lib/resolve_target_repo.sh"
