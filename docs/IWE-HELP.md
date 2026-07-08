@@ -65,7 +65,8 @@ MCP (Model Context Protocol) — протокол, через который Cla
 
 | Сервер | Что даёт | Инструменты |
 |--------|---------|-------------|
-| **iwe-knowledge** (Gateway: `mcp.aisystant.com/mcp`) | Поиск по Pack-репо, руководствам, DS (~5400 документов) + цифровой двойник | `knowledge_search`, `knowledge_get_document`, `knowledge_list_sources`, `dt_read_digital_twin`, `dt_write_digital_twin`, `dt_describe_by_path` |
+| **knowledge-mcp** (Workers: `knowledge-mcp.aisystant.workers.dev/mcp`) | 16 knowledge-инструментов, быстрый старт (Cloudflare Workers) | `search`, `get_cognitive_brief`, `knowledge_search`, `knowledge_get_document`, `knowledge_list_sources`, `knowledge_feedback`, и др. |
+| **iwe-knowledge** (Gateway: `mcp.aisystant.com/mcp`) | Полный каталог 62+ инструментов: знания, цифровой двойник, агенты, Telegram | `knowledge_search`, `knowledge_get_document`, `dt_read_digital_twin`, `send_telegram_message`, `agent_status_*`, и др. |
 
 > Поиск по руководствам: `knowledge_search("запрос", source_type="guides")`.
 
