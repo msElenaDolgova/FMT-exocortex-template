@@ -1,6 +1,10 @@
 {
   "mcpServers": {
 
+    "knowledge-mcp": {
+      "type": "http",
+      "url": "https://knowledge-mcp.aisystant.workers.dev/mcp"
+    },
     "iwe-knowledge": {
       "type": "http",
       "url": "https://mcp.aisystant.com/mcp"
